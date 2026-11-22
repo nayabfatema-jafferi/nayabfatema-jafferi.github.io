@@ -345,6 +345,7 @@ svg .hint{fill:none;stroke:var(--gold);stroke-width:.1;animation:pulse .6s ease-
   <div class="sheet hide" id="sheet"><div class="sc" id="sheetC"></div></div>
 </div>
 
+<script src="firebase-config.js"></script>
 <script>
 {
 const $=s=>document.querySelector(s);
@@ -460,14 +461,7 @@ function dec(str){
 /* ---------- online leaderboard ----------
    Paste your Firebase web config here (Firebase console > Project settings > Your apps > Web app).
    Leave it as null to run without the online leaderboard. */
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCEV6UwD4mXisc--TOBv5zANrG2VpnFo3c",
-  authDomain: "threadline-b8367.firebaseapp.com",
-  projectId: "threadline-b8367",
-  storageBucket: "threadline-b8367.firebasestorage.app",
-  messagingSenderId: "643744036680",
-  appId: "1:643744036680:web:2e52507559ef542ff5e57d"
-};  */
+const FIREBASE_CONFIG = window.THREADLINE_FIREBASE || null;   /* set in firebase-config.js */
 const FB_VER = '10.12.2';
 
 /* the two games: where each keeps its daily results */
@@ -479,7 +473,18 @@ function streak(g='line'){const rec=store.get(GAMES[g].rec,{});let s=0,d=new Dat
   if(!rec[dayKey(d)])d.setUTCDate(d.getUTCDate()-1);
   while(rec[dayKey(d)]){s++;d.setUTCDate(d.getUTCDate()-1)}return s}
 
-let backend=null,backendTried=false;
+let backend=null,backendTried=false,fbErr='';
+function explainFb(e){const code=String(e&&e.code||''),msg=String(e&&e.message||e||'');
+  if(/admin-restricted-operation|operation-not-allowed/.test(code))return 'Guest sign-in is switched off. In Firebase: Authentication > Sign-in method > Anonymous > Enable.';
+  if(/configuration-not-found/.test(code+msg))return 'Authentication isn\'t set up yet. In Firebase: Authentication > Get started, then enable Anonymous.';
+  if(/unauthorized-domain/.test(code))return `This website (${location.hostname}) isn't allowed yet. In Firebase: Authentication > Settings > Authorized domains > Add domain.`;
+  if(/api-key|invalid-api-key/.test(code+msg))return 'The Firebase config looks wrong. Copy it again from Project settings > Your apps > Web app.';
+  if(/network-request-failed/.test(code))return 'Couldn\'t reach Firebase. Check the internet connection.';
+  if(/permission-denied/.test(code))return 'The database rules are blocking the game. In Firebase: Firestore Database > Rules, paste firestore.rules and click Publish.';
+  if(/not-found|failed-precondition/.test(code))return 'No database found. In Firebase: Firestore Database > Create database.';
+  if(/timeout/.test(code))return 'Firebase didn\'t answer. Check the internet connection and try again.';
+  if(/dynamically imported module|Failed to fetch|Importing a module|Load failed/i.test(msg))return 'Couldn\'t download Firebase. Check the internet connection, or turn off any content blocker.';
+  return 'Firebase error: '+(code||msg).slice(0,120);}
 let me={name:store.get('tl-name','')};
 let friends=store.get('tl-friends',[]);
 const newLb=(g,tab)=>({g,day:null,rows:[],ready:false,err:'',unsub:null,tab:tab||'all',rankInfo:null,friendRows:null});
@@ -493,11 +498,12 @@ async function fbBackend(){
   const base=`https://www.gstatic.com/firebasejs/${FB_VER}/`;
   const [A,Au,F]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')]);
   const app=A.initializeApp(FIREBASE_CONFIG),auth=Au.getAuth(app),fs=F.getFirestore(app);
-  const u=await new Promise((res,rej)=>{const un=Au.onAuthStateChanged(auth,x=>{if(x){un();res(x)}else Au.signInAnonymously(auth).catch(rej)})});
+  const u=await new Promise((res,rej)=>{const tm=setTimeout(()=>rej({code:'timeout'}),15000);const un=Au.onAuthStateChanged(auth,x=>{if(x){clearTimeout(tm);un();res(x)}else Au.signInAnonymously(auth).catch(e=>{clearTimeout(tm);rej(e)})},e=>{clearTimeout(tm);rej(e)})});
   const uid=u.uid,col=(day,g)=>F.collection(fs,'daily',GAMES[g].fb+day.replace(/-/g,''),'scores');
   const rows=snap=>snap.docs.map(d=>({id:d.id,...d.data()}));
   return {kind:'firebase',uid,
     async myName(){const s=await F.getDoc(F.doc(fs,'users',uid));return s.exists()?s.data().name:null},
+    async check(){await F.getDoc(F.doc(fs,'users',uid))},
     async claim(name){const n=name.toLowerCase();try{
         const ref=F.doc(fs,'usernames',n),s=await F.getDoc(ref);if(s.exists())return s.data().uid===uid?'ok':'taken';
         const b=F.writeBatch(fs);b.set(ref,{uid,name});b.set(F.doc(fs,'users',uid),{name});await b.commit();return 'ok'}
@@ -532,7 +538,9 @@ async function claudeBackend(){
   };
 }
 async function initBackend(){
-  if(FIREBASE_CONFIG&&/^https?:/.test(location.protocol)){try{backend=await fbBackend()}catch(e){backend=null}}
+  if(!FIREBASE_CONFIG)fbErr='The Firebase config wasn\'t found. Paste it into firebase-config.js and upload that file next to index.html.';
+  else if(!/^https?:/.test(location.protocol))fbErr='This is the game file opened from your device. Open your website address instead.';
+  else{try{backend=await fbBackend();await backend.check()}catch(e){backend=null;fbErr=explainFb(e)}}
   if(!backend&&hasClaude){try{backend=await claudeBackend()}catch(e){backend=null}}
   backendTried=true;
   if(backend){try{const n=await backend.myName();if(n){me.name=n;store.set('tl-name',n)}else if(me.name){const r=await backend.claim(me.name);if(r==='taken'){me.name='';store.set('tl-name','')}}}catch(e){}
@@ -547,7 +555,7 @@ function subscribeDay(g){
   try{N.unsub=backend.subscribe(k,g,(rows,sure)=>{
       if(sure){clearTimeout(timer);N.ready=true;if(N.err==='slow')N.err=''}
       N.rows=rows.filter(r=>typeof r.t==='number');updateRank(g);refresh()},
-    ()=>{clearTimeout(timer);N.err='error';refresh()})}
+    e=>{clearTimeout(timer);N.err='error';N.errMsg=explainFb(e);refresh()})}
   catch(e){clearTimeout(timer);N.err='error';refresh()}
 }
 const rankBusy={};
@@ -654,8 +662,8 @@ function renderLb(){
   $('#lbSub').textContent=`${G.name} · ${niceDate(k)}`;
   const gseg=`<div class="seg"><button data-lg="line" class="${g==='line'?'on':''}">Line</button><button data-lg="knots" class="${g==='knots'?'on':''}">Knots</button></div>`;
   const wire=()=>C.querySelectorAll('[data-lg]').forEach(b=>b.onclick=()=>{lbGame=b.dataset.lg;renderLb()});
-  if(!backend){C.innerHTML=gseg+`<div class="card empty"><b style="font-size:18px">${backendTried?'Leaderboard not connected':'Connecting…'}</b><p class="muted">${backendTried?'The online leaderboard isn\'t set up in this version. ':''}${mine!=null?`Your time today: <b>${fmt(mine)}</b>, saved on this device.`:''}</p></div>`;wire();return}
-  if(L.err==='error'){C.innerHTML=gseg+`<div class="card empty"><b>The leaderboard can't be reached right now.</b><p class="muted">Check your connection. Your own time is saved on this device.</p></div>`;wire();return}
+  if(!backend){C.innerHTML=gseg+`<div class="card empty"><b style="font-size:18px">${backendTried?'Leaderboard not connected':'Connecting…'}</b><p class="muted">${backendTried?(fbErr?esc(fbErr)+' ':'The online leaderboard isn\'t set up in this version. '):''}${mine!=null?`Your time today: <b>${fmt(mine)}</b>, saved on this device.`:''}</p></div>`;wire();return}
+  if(L.err==='error'){C.innerHTML=gseg+`<div class="card empty"><b>The leaderboard can't be reached right now.</b><p class="muted">${esc(L.errMsg||'Check your connection.')} Your own time is saved on this device.</p></div>`;wire();return}
   if(!L.ready){C.innerHTML=gseg+`<div class="card empty"><p class="muted">${L.err==='slow'?'Still loading the leaderboard…':'Loading…'}</p></div>`;wire();return}
   const tabs=`<div class="seg"><button data-t="all" class="${L.tab==='all'?'on':''}">Everyone</button><button data-t="friends" class="${L.tab==='friends'?'on':''}">Friends${friends.length?' · '+friends.length:''}</button></div>`;
   let list=L.rows;

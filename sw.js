@@ -1,5 +1,6 @@
-// Keeps Threadline playable offline: serves saved files first, refreshes them in the background.
-const CACHE = 'threadline-v5';
+// Keeps Threadline playable offline. Always tries the website first, so updates show straight away,
+// and falls back to the saved copy when there's no internet.
+const CACHE = 'threadline-v6';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'privacy.html', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener('activate', e => {
@@ -7,12 +8,9 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(hit => {
-    const net = fetch(e.request).then(res => {
-      if (res.ok && new URL(e.request.url).origin === location.origin) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
-      return res;
-    }).catch(() => hit);
-    return hit || net;
-  }));
+  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
+  e.respondWith(fetch(e.request, { cache: 'no-cache' }).then(res => {
+    if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
+    return res;
+  }).catch(() => caches.match(e.request, { ignoreSearch: true })));
 });
