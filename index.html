@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Threadline</title>
+<meta name="description" content="Two puzzle games, Line and Knots: 100-level journeys with stars and bonus Sudoku, daily puzzles with a leaderboard, and puzzles you make for friends.">
+<meta name="theme-color" content="#efe7fb">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+/* VOICE: a friendly daily puzzle app, calm pastel, a little competitive
+   IDEA: a pegboard with one pink thread; one shared puzzle a day with a standings board
+   PICTURE: the live board on the game screen; the day's card and leaderboard elsewhere
+   COLOUR and TYPE: lavender field, cream cards, pastel pink thread, purple numbers; rounded system type
+   LAYOUT: phone-shaped app with screens: home, game, leaderboard, create, join; bottom tool bars */
+:root{color-scheme:light;
+--bg:#efe7fb;--panel:#fffdfb;--ink:#3f3b5e;--soft:#837fa3;--cell:#fffdfb;--grid:#f1ecf7;
+--path:#f6a9bd;--tint:#fde6ee;--wall:#8b82c4;--line:#e8e1f3;--blue:#bcd9f5;--accent:#d8668b;--mint:#d4f0e2;--btn:#f6a9bd;--gold:#f5c451;
+--sh:0 6px 18px rgba(140,110,190,.16)}
+*{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:#e4d9f6;color:var(--ink);font:16px/1.45 ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+button{font-family:inherit;color:inherit}
+.app{position:relative;width:100%;max-width:480px;height:100dvh;margin:0 auto;background:var(--bg);overflow:hidden}
+@media(min-width:640px) and (min-height:720px){body{display:grid;place-items:center}.app{width:420px;height:min(880px,calc(100dvh - 40px));border-radius:40px;border:8px solid #fffdfb;box-shadow:0 30px 70px rgba(110,80,170,.28)}}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column}
+.screen.in{animation:slide .28s ease}
+@keyframes slide{from{opacity:0;transform:translateX(18px)}}
+.hide{display:none!important}
+.bar{display:flex;align-items:center;gap:10px;padding:max(14px,env(safe-area-inset-top)) 14px 8px}
+.bar h2{margin:0;font-size:20px;line-height:1.15}
+.ttl{flex:1;display:grid}.ttl small{color:var(--soft);font-size:13px}
+.ib{width:44px;height:44px;flex:none;border-radius:14px;border:0;background:var(--panel);display:grid;place-items:center;box-shadow:var(--sh);cursor:pointer}
+.ib svg,.tb svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.pill{background:var(--panel);border-radius:999px;padding:8px 14px;font-weight:700;font-variant-numeric:tabular-nums;box-shadow:var(--sh);white-space:nowrap}
+.content{flex:1;overflow-y:auto;padding:8px 16px 20px;min-height:0}
+.tools{display:flex;gap:10px;padding:10px 16px max(16px,env(safe-area-inset-bottom))}
+.tb{flex:1;display:grid;justify-items:center;gap:2px;border:0;background:var(--panel);border-radius:18px;padding:9px 6px;min-height:62px;font-weight:600;font-size:13px;box-shadow:var(--sh);cursor:pointer}
+.muted{color:var(--soft);font-size:14px;margin:0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button.b{font-weight:600;font-size:15px;border:2px solid var(--line);background:var(--panel);border-radius:14px;padding:10px 16px;min-height:46px;cursor:pointer}
+button.p{background:var(--btn);border-color:var(--btn)}
+button.b:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--wall);outline-offset:2px}
+select,input,textarea{font:16px inherit;font-family:inherit;color:var(--ink);background:var(--cell);border:2px solid var(--line);border-radius:14px;padding:10px 12px;min-height:46px;width:100%}
+select{width:auto}
+textarea{min-height:96px;resize:vertical;font-size:14px;word-break:break-all}
+label{font-size:14px;font-weight:600;display:grid;gap:4px}
+.msg{font-size:14px;color:var(--accent);min-height:1em;margin:0}
+.banner{background:var(--tint);border-radius:14px;padding:10px 14px;font-size:14px;margin-bottom:6px}
+.banner b{color:var(--accent)}
+
+/* home */
+.homec{display:grid;gap:14px;align-content:start}
+.brand{display:flex;align-items:center;gap:12px;padding:8px 0 0 4px}
+.brand svg{width:52px;height:52px;flex:none;filter:drop-shadow(0 6px 10px rgba(140,110,190,.25));transform:rotate(-5deg)}
+.brand h1{margin:0;font-size:30px;line-height:1.05;font-weight:800;letter-spacing:-.02em}
+.brand p{margin:2px 0 0;color:var(--soft);font-size:14px}
+.card{background:var(--panel);border-radius:24px;padding:18px;box-shadow:var(--sh);display:grid;gap:10px}
+.daily{background:linear-gradient(150deg,#fde6ee,#ece3fb 70%);position:relative;overflow:hidden}
+.daily .kick{font-size:13px;font-weight:700;color:var(--accent)}
+.daily h3{margin:0;font-size:26px;line-height:1.1}
+.daily .meta{display:flex;flex-wrap:wrap;gap:6px}
+.tag{background:rgba(255,255,255,.75);border-radius:999px;padding:4px 10px;font-size:13px;font-weight:600}
+.daily .mini{position:absolute;right:-30px;bottom:-26px;width:120px;opacity:.35;transform:rotate(10deg);pointer-events:none}
+.daily .b{justify-self:start}
+.stat{display:flex;gap:10px}
+.stat div{flex:1;background:rgba(255,255,255,.75);border-radius:16px;padding:8px 12px}
+.stat b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--soft)}
+.chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.chips button{border:2px solid var(--line);background:var(--panel);border-radius:14px;padding:8px 2px;font-weight:700;font-size:13px;cursor:pointer;display:grid;gap:0;min-height:52px}
+.chips button small{font-weight:500;color:var(--soft);font-size:12px}
+.chips button.on{border-color:var(--wall);background:#f1ecfb}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lk{border:0;background:var(--panel);border-radius:20px;padding:14px;text-align:left;box-shadow:var(--sh);cursor:pointer;display:grid;gap:2px;font-weight:800;font-size:16px}
+.lk small{font-weight:500;font-size:12px;color:var(--soft)}
+
+/* username + friends */
+.mechip{border:0;background:var(--panel);border-radius:999px;padding:8px 12px;font-weight:700;font-size:13px;box-shadow:var(--sh);cursor:pointer;max-width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:40px}
+.welc{display:grid;gap:12px;align-content:center;text-align:center;max-width:360px;margin:0 auto;width:100%}
+.welc h1{margin:4px 0 0;font-size:32px;line-height:1.1}
+.wlogo{width:96px;height:96px;justify-self:center;transform:rotate(-5deg);filter:drop-shadow(0 8px 14px rgba(140,110,190,.25))}
+.seg{display:flex;background:#e2d6f5;border-radius:999px;padding:4px;margin-bottom:12px}
+.seg button{flex:1;border:0;background:none;border-radius:999px;padding:8px;font-weight:700;font-size:14px;cursor:pointer;min-height:40px}
+.seg button.on{background:var(--panel);color:var(--accent);box-shadow:0 2px 6px rgba(120,100,170,.18)}
+.lb li{grid-template-columns:30px 38px minmax(0,1fr) auto 32px!important}
+.add{width:32px;height:32px;border-radius:50%;border:2px solid var(--line);background:none;font-weight:800;font-size:18px;line-height:1;cursor:pointer;color:var(--wall)}
+
+/* map */
+.mapc{padding:0}
+.world{position:relative}
+.world h3{position:absolute;left:16px;top:14px;margin:0;font-size:15px;line-height:1.25;z-index:1}
+.world h3 small{display:block;font-weight:500;color:var(--soft);font-size:13px}
+.world svg.trail{position:absolute;inset:0;width:100%;height:100%}
+.node{position:absolute;width:62px;height:62px;margin-left:-31px;border-radius:50%;border:4px solid var(--wc);background:var(--panel);font-size:20px;font-weight:800;display:grid;place-items:center;cursor:pointer;box-shadow:0 5px 0 rgba(110,90,160,.18)}
+.node.done{background:var(--wc)}
+.node.cur{animation:bob 1.4s ease-in-out infinite;box-shadow:0 0 0 8px rgba(255,255,255,.7),0 5px 0 rgba(110,90,160,.18)}
+.node.lock{background:#ece8f3;border-color:#d9d3e6;color:#a9a3c0;cursor:default;box-shadow:none}
+.node.lock svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.4}
+.node.shake{animation:shake .3s}
+@keyframes bob{50%{transform:translateY(-5px)}}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.nst{position:absolute;margin-left:-24px;width:48px;display:flex;justify-content:center;gap:1px}
+.nst svg{width:15px;height:15px;fill:#ddd6ea}.nst svg.on{fill:var(--gold)}
+.bigstars{display:flex;justify-content:center;gap:6px}
+.bigstars svg{width:58px;height:58px;fill:#e6e0f0}
+.bigstars svg.on{fill:var(--gold);animation:pop .4s ease backwards}
+.bigstars svg:nth-child(2){transform:translateY(-10px)}
+@keyframes pop{from{transform:scale(.2)}}
+.nst small{font-size:11px;font-weight:700;color:var(--soft);white-space:nowrap}
+.node.bonus{width:72px;height:72px;margin-left:-36px;border-radius:22px;background:#fffdfb;color:var(--wc);border-width:4px}
+.node.bonus svg{width:32px;height:32px;fill:none;stroke:currentColor;stroke-width:2}
+.node.bonus.done{background:var(--wc);color:#fff}
+.node.bonus.lock{color:#a9a3c0}
+.world.closed>*:not(h3):not(.gate){opacity:.35;filter:grayscale(.6)}
+.gate{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--panel);border-radius:20px;padding:16px 20px;display:grid;justify-items:center;gap:4px;text-align:center;box-shadow:var(--sh);width:min(80%,260px)}
+.gate svg{width:26px;height:26px;fill:none;stroke:var(--soft);stroke-width:2.2}
+.gate span{font-size:13px;color:var(--soft)}
+/* journey card */
+.pill.sm{padding:4px 10px;font-size:13px;display:flex;gap:4px;align-items:center}.pill svg{width:15px;height:15px;fill:var(--gold)}
+.sbar{position:relative;height:12px;border-radius:99px;background:var(--grid);overflow:visible}
+.sbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#f6a9bd,#bfaef0);transition:width .4s}
+.gmark{position:absolute;left:50%;top:-4px;width:3px;height:20px;border-radius:2px;background:var(--wall)}
+/* sudoku */
+.sdb{width:min(100cqw,100cqh);aspect-ratio:1;background:var(--panel);border-radius:18px;padding:8px;box-shadow:0 14px 34px rgba(140,110,190,.18);display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0}
+.sq{border:1px solid var(--grid);background:var(--cell);font-size:calc(min(100cqw,100cqh)/6*.42);font-weight:600;color:var(--wall);cursor:pointer;display:grid;place-items:center;padding:0;font-variant-numeric:tabular-nums}
+.sq.gv{color:var(--ink);font-weight:800}
+.sq.rb{border-right:3px solid var(--wall)}.sq.bb{border-bottom:3px solid var(--wall)}
+.sq.peer{background:#f6f1fc}.sq.same{background:#fbe3ea}.sq.sel{background:#f6a9bd55;outline:3px solid var(--accent);outline-offset:-3px}
+.sq.bad{color:#d0403f}
+.pad{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:10px}
+.pk{border:0;background:var(--panel);border-radius:14px;min-height:52px;font-size:22px;font-weight:800;color:var(--ink);box-shadow:var(--sh);cursor:pointer}
+.pk.er{font-size:18px;color:var(--soft)}
+/* knots */
+.kboard{--n:4;width:min(100cqw,100cqh);aspect-ratio:1;background:var(--panel);border-radius:22px;padding:12px;box-shadow:0 14px 34px rgba(140,110,190,.18);display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:9px;touch-action:none;user-select:none;-webkit-user-select:none}
+.kt,.kd{border-radius:50%;aspect-ratio:1;min-width:0}
+.kt{border:0;display:grid;place-items:center;font-weight:800;color:var(--ink);font-size:calc(min(100cqw,100cqh) / var(--n) * .3);cursor:grab;box-shadow:inset 0 -5px 0 rgba(110,90,160,.13),0 4px 10px rgba(110,90,160,.15);transition:transform .12s;font-variant-numeric:tabular-nums}
+.kt.bub{background:#fffdfb;color:var(--accent);border:3px dashed var(--accent);box-shadow:0 4px 10px rgba(216,102,139,.18)}
+.kt.k3{font-size:calc(min(100cqw,100cqh) / var(--n) * .24)}.kt.k4{font-size:calc(min(100cqw,100cqh) / var(--n) * .19)}
+.kt.sel{outline:4px solid var(--accent);transform:scale(1.07)}
+.kt.tgt{outline:3px dashed var(--accent);outline-offset:2px}
+.kt.over{transform:scale(1.12);outline:4px solid var(--accent)}
+.kt.pop{animation:kpop .35s ease}
+.kt.hint{outline:4px solid var(--gold);animation:pulse .7s ease-in-out infinite}
+@keyframes kpop{40%{transform:scale(1.22)}}
+.kd{background:radial-gradient(circle,#e7dff2 16%,transparent 18%)}
+.prog.warn{color:var(--accent)}
+.seg.big button{font-size:16px;min-height:44px}
+
+/* game */
+.gamec{display:flex;flex-direction:column;overflow:hidden}
+.prog{margin:0 0 8px;text-align:center;color:var(--soft);font-size:14px;font-weight:600}
+.boardbox{flex:1;min-height:0;display:grid;place-items:center;container-type:size}
+.board{width:min(100cqw,100cqh);aspect-ratio:1;background:var(--panel);border-radius:22px;padding:10px;box-shadow:0 14px 34px rgba(140,110,190,.18);touch-action:manipulation;user-select:none;-webkit-user-select:none;cursor:pointer}
+.board svg{width:100%;height:100%;display:block}
+.ebox{display:grid;place-items:center;margin:8px 0}
+.ebox .board{width:min(100%,330px)}
+
+/* leaderboard */
+.you{background:linear-gradient(150deg,#fde6ee,#ece3fb 70%);border-radius:24px;padding:18px;display:grid;gap:4px;text-align:center;margin-bottom:12px}
+.you b{font-size:40px;line-height:1.05}
+.you .muted{color:var(--ink)}
+.lb{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.lb li{display:grid;grid-template-columns:34px 38px minmax(0,1fr) auto;align-items:center;gap:10px;background:var(--panel);border-radius:18px;padding:10px 14px;box-shadow:var(--sh)}
+.lb li.me{outline:3px solid var(--path)}
+.lb .rk{font-weight:800;color:var(--soft);text-align:center}
+.lb li:nth-child(1) .rk{color:#d9a21f}.lb li:nth-child(2) .rk{color:#9a9ab0}.lb li:nth-child(3) .rk{color:#c98a5a}
+.av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#fff}
+.lb .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb .tm{font-weight:800;font-variant-numeric:tabular-nums}
+.locked{filter:blur(5px);pointer-events:none;user-select:none}
+.empty{text-align:center;padding:30px 10px}
+
+/* create */
+.steps{display:flex;gap:6px}
+.steps button{flex:1;border:0;border-radius:12px;padding:8px 2px;font-weight:600;font-size:13px;background:var(--panel);color:var(--soft);cursor:pointer;min-height:42px;white-space:nowrap;box-shadow:var(--sh)}
+.steps button.on{background:var(--blue);color:var(--ink)}
+.steps button:disabled{opacity:.45;cursor:default}
+.form{display:grid;gap:12px;margin-top:6px}
+
+/* sheet */
+.sheet{position:absolute;inset:0;background:rgba(63,59,94,.35);display:flex;align-items:flex-end;z-index:5}
+.sc{width:100%;background:var(--panel);border-radius:30px 30px 0 0;padding:26px 20px max(22px,env(safe-area-inset-bottom));display:grid;gap:12px;text-align:center;animation:up .3s ease}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.sc h2{margin:0;font-size:26px;line-height:1.15}
+.sc .big{font-size:46px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.sc .row{justify-content:center}
+.sc .row .b{flex:1}
+
+svg .gl{stroke:var(--grid);stroke-width:.03}
+svg .bg{fill:var(--cell)}
+svg .ti{fill:var(--tint)}
+svg .pa{stroke:var(--path);fill:none;stroke-width:.42;stroke-linecap:round;stroke-linejoin:round}
+svg .pa.faint{opacity:.3}
+svg .wa{stroke:var(--wall);stroke-width:.13;stroke-linecap:round}
+svg .nc{fill:var(--wall)}
+svg .nc.hit{fill:var(--accent)}
+svg .nt{fill:#fff;font:800 .36px system-ui,sans-serif;text-anchor:middle;dominant-baseline:central}
+svg .hd{fill:none;stroke:var(--accent);stroke-width:.07;opacity:.85}
+svg .ed{fill:var(--soft);opacity:.5}
+svg .hint{fill:none;stroke:var(--gold);stroke-width:.1;animation:pulse .6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{50%{transform:scale(1.15)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <section class="screen" id="home">
+    <div class="content homec">
+      <div class="brand">
+        <svg viewBox="-.08 -.08 4.16 4.16"><rect class="bg" width="4" height="4" rx=".3"/><polyline class="pa" points=".5,.5 1.5,.5 2.5,.5 3.5,.5 3.5,1.5 2.5,1.5 1.5,1.5 .5,1.5 .5,2.5 .5,3.5 1.5,3.5 1.5,2.5 2.5,2.5 2.5,3.5 3.5,3.5 3.5,2.5"/><circle class="nc hit" cx=".5" cy=".5" r=".32"/><circle class="nc" cx="3.5" cy="2.5" r=".32"/></svg>
+        <div style="flex:1"><h1>Threadline</h1><p>Two daily puzzles. One leaderboard.</p></div>
+        <button class="mechip hide" id="meChip"></button>
+      </div>
+
+      <div class="seg big" id="gameSeg"><button data-g="line" class="on">Line</button><button data-g="knots">Knots</button></div>
+
+      <div class="card daily">
+        <svg class="mini" viewBox="0 0 4 4"><polyline class="pa" points=".5,.5 3.5,.5 3.5,1.5 .5,1.5 .5,3.5 3.5,3.5"/></svg>
+        <span class="kick" id="dKick">Puzzle of the day</span>
+        <h3 id="dDate">Today</h3>
+        <p class="muted" id="dRules" style="color:var(--ink)"></p>
+        <div class="meta"><span class="tag" id="dSize">7 × 7</span><span class="tag">Hard</span><span class="tag" id="dCount">Same puzzle for everyone</span></div>
+        <div class="stat" id="dStat"></div>
+        <div class="row"><button class="b p" id="dPlay">Play today's puzzle</button><button class="b" id="dBoard">Leaderboard</button></div>
+        <p class="muted" id="dNext"></p>
+      </div>
+
+      <div class="card journey" id="jCard">
+        <div class="row" style="justify-content:space-between"><b style="font-size:18px" id="jTitle">Journey</b><span class="pill sm" id="jStars"></span></div>
+        <p class="muted" id="jStage" style="color:var(--ink)"></p>
+        <div class="sbar" aria-hidden="true"><i id="jFill"></i><span class="gmark" title="Bonus opens here"></span></div>
+        <p class="muted" id="jNote"></p>
+        <div class="row"><button class="b p" id="jPlay" style="flex:1">Play</button><button class="b" id="jMap">Levels</button></div>
+      </div>
+
+      <div class="links">
+        <button class="lk" id="hCreate">Create a puzzle<small>Design one, dare your friends</small></button>
+        <button class="lk" id="hJoin">Join a challenge<small>Paste a friend's code</small></button>
+      </div>
+      <p class="muted" style="text-align:center;font-size:13px"><a href="privacy.html" style="color:var(--soft)">Privacy policy</a></p>
+    </div>
+  </section>
+
+  <section class="screen hide" id="welcome">
+    <div class="content welc">
+      <svg viewBox="-.08 -.08 4.16 4.16" class="wlogo"><rect class="bg" width="4" height="4" rx=".3"/><polyline class="pa" points=".5,.5 1.5,.5 2.5,.5 3.5,.5 3.5,1.5 2.5,1.5 1.5,1.5 .5,1.5 .5,2.5 .5,3.5 1.5,3.5 1.5,2.5 2.5,2.5 2.5,3.5 3.5,3.5 3.5,2.5"/><circle class="nc hit" cx=".5" cy=".5" r=".32"/><circle class="nc" cx="3.5" cy="2.5" r=".32"/></svg>
+      <h1>Pick a username</h1>
+      <p class="muted">It's how other players see you on the daily leaderboard. No email or password needed.</p>
+      <label style="text-align:left">Username<input id="uName" maxlength="15" placeholder="e.g. nayab_puzzles" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+      <p class="muted" style="font-size:13px;text-align:left">3 to 15 letters, numbers or _. You can't change it later.</p>
+      <p class="msg" id="uMsg"></p>
+      <button class="b p" id="uGo">Continue</button>
+      <button class="b" id="uSkip" style="border:0;background:none">Maybe later</button>
+      <a href="privacy.html" class="muted" style="font-size:13px">Privacy policy</a>
+    </div>
+  </section>
+
+  <section class="screen hide" id="game">
+    <header class="bar"><button class="ib" id="gBack" aria-label="Back"></button><div class="ttl"><h2 id="gTitle">Puzzle</h2><small id="gSub"></small></div><span class="pill" id="gClock">0:00</span></header>
+    <div class="content gamec">
+      <div id="gBanner" class="banner hide"></div>
+      <p class="prog" id="gProg"></p>
+      <div class="boardbox"><div class="board" id="gBoard" aria-label="Puzzle board"></div></div>
+    </div>
+    <nav class="tools">
+      <button class="tb" id="gUndo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Undo</button>
+      <button class="tb" id="gRestart"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg>Restart</button>
+      <button class="tb" id="gHint"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/></svg><span id="gHintL">Hint</span></button>
+    </nav>
+  </section>
+
+  <section class="screen hide" id="kgame">
+    <header class="bar"><button class="ib" id="kBack" aria-label="Back"></button><div class="ttl"><h2 id="kTitle">Knots</h2><small id="kSub"></small></div><span class="pill" id="kClock">0:00</span></header>
+    <div class="content gamec">
+      <p class="prog" id="kProg"></p>
+      <div class="boardbox"><div class="kboard" id="kBoard" aria-label="Knots board"></div></div>
+    </div>
+    <nav class="tools">
+      <button class="tb" id="kUndo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Undo</button>
+      <button class="tb" id="kRestart"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg>Restart</button>
+      <button class="tb" id="kHint"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/></svg><span id="kHintL">Hint</span></button>
+    </nav>
+  </section>
+
+  <section class="screen hide" id="map">
+    <header class="bar"><button class="ib" id="mBack" aria-label="Back"></button><div class="ttl"><h2 id="mTitle">Levels</h2><small id="mMsg"></small></div><span class="pill" id="mStars"></span></header>
+    <div class="content mapc" id="mapC"></div>
+  </section>
+
+  <section class="screen hide" id="sdgame">
+    <header class="bar"><button class="ib" id="sdBack" aria-label="Back"></button><div class="ttl"><h2 id="sdTitle">Bonus Sudoku</h2><small id="sdSub"></small></div><span class="pill" id="sdClock">0:00</span></header>
+    <div class="content gamec">
+      <p class="prog" id="sdProg"></p>
+      <div class="boardbox"><div class="sdb" id="sdBoard" aria-label="Sudoku board"></div></div>
+      <div class="pad" id="sdPad"></div>
+    </div>
+    <nav class="tools"><button class="tb" id="sdHint"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/></svg>Hint</button></nav>
+  </section>
+
+  <section class="screen hide" id="lbScreen">
+    <header class="bar"><button class="ib" data-go="home" aria-label="Back"></button><div class="ttl"><h2>Leaderboard</h2><small id="lbSub">Today's puzzle</small></div></header>
+    <div class="content" id="lbC"></div>
+  </section>
+
+  <section class="screen hide" id="create">
+    <header class="bar"><button class="ib" data-go="home" aria-label="Back"></button><div class="ttl"><h2>Create</h2><small>Build a challenge for friends</small></div></header>
+    <div class="content">
+      <div class="steps">
+        <button data-s="0" class="on">1 Path</button><button data-s="1">2 Numbers</button><button data-s="2">3 Walls</button><button data-s="3">4 Share</button>
+      </div>
+      <div class="ebox" id="eBox"><div class="board" id="eBoard" aria-label="Puzzle editor"></div></div>
+      <p id="edHelp" class="muted"></p>
+      <div id="edTools" class="row" style="margin-top:10px"></div>
+      <div id="edShare" class="form hide">
+        <label>Your name<input id="fName" maxlength="20" placeholder="e.g. Nayab"></label>
+        <label>Puzzle name<input id="fTitle" maxlength="30" placeholder="e.g. Sunday twister"></label>
+        <div class="row"><button class="b" id="test">Play-test it</button><span class="muted" id="tgt">No time to beat yet</span></div>
+        <div class="row"><button class="b" id="check">Check for other routes</button><span class="muted" id="chk"></span></div>
+        <button class="b p" id="make">Create challenge</button>
+        <div id="out" class="form hide">
+          <label>Challenge code<textarea id="code" readonly></textarea></label>
+          <div class="row"><button class="b p" id="cpMsg">Copy invite message</button><button class="b" id="cpCode">Copy code only</button></div>
+          <p class="muted">Friends open Threadline, tap <b>Join a challenge</b> and paste the code. The page link now carries this puzzle too.</p>
+        </div>
+      </div>
+      <p class="msg" id="edMsg" style="margin-top:8px"></p>
+    </div>
+    <nav class="tools"><button class="b" id="back" style="flex:1">Back</button><button class="b p" id="next" style="flex:1">Next</button></nav>
+  </section>
+
+  <section class="screen hide" id="join">
+    <header class="bar"><button class="ib" data-go="home" aria-label="Back"></button><div class="ttl"><h2>Join a challenge</h2><small>Paste the code or link a friend sent you</small></div></header>
+    <div class="content" style="display:grid;gap:12px;align-content:start">
+      <textarea id="jCode" placeholder="Paste code here"></textarea>
+      <button class="b p" id="jGo">Load challenge</button>
+      <p class="msg" id="jMsg"></p>
+    </div>
+  </section>
+
+  <div class="sheet hide" id="sheet"><div class="sc" id="sheetC"></div></div>
+</div>
+
+<script>
+{
+const $=s=>document.querySelector(s);
+let R=Math.random;
+const rnd=n=>Math.floor(R()*n);
+const seeded=s=>()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const fmt=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+const ek=(a,b)=>a<b?a+'-'+b:b+'-'+a;
+const adjC=(n,a,b)=>(Math.floor(a/n)===Math.floor(b/n)&&Math.abs(a-b)===1)||Math.abs(a-b)===n;
+const nbrs=(n,c)=>{const r=Math.floor(c/n),k=c%n,o=[];if(r>0)o.push(c-n);if(r<n-1)o.push(c+n);if(k>0)o.push(c-1);if(k<n-1)o.push(c+1);return o};
+const edges=n=>{const e=[];for(let r=0;r<n;r++)for(let c=0;c<n-1;c++)e.push([r*n+c,r*n+c+1]);for(let r=0;r<n-1;r++)for(let c=0;c<n;c++)e.push([r*n+c,(r+1)*n+c]);return e};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const BACK='<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>';
+document.querySelectorAll('.ib').forEach(b=>b.innerHTML=BACK);
+const store={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v??d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- difficulty ---------- */
+const DIFF={
+  easy:{name:'Easy',n:5,gMin:3,gSpan:3,walls:2},
+  medium:{name:'Medium',n:6,gMin:4,gSpan:4,walls:3},
+  hard:{name:'Hard',n:7,gMin:5,gSpan:5,walls:5},
+  expert:{name:'Expert',n:8,gMin:7,gSpan:6,walls:7}};
+const HINT_PENALTY=15;
+
+/* ---------- puzzle model ---------- */
+function mkPuzzle(n,pos,walls,meta={}){const nums=new Array(n*n).fill(0);pos.forEach((c,i)=>nums[c]=i+1);return {n,pos,K:pos.length,nums,walls:new Set(walls),...meta}}
+function randomPath(n){
+  let p=[];for(let r=0;r<n;r++)for(let c=0;c<n;c++)p.push(r*n+(r%2?n-1-c:c));
+  for(let it=0;it<n*n*30;it++){
+    if(R()<.5)p.reverse();
+    const nb=nbrs(n,p[0]),x=nb[rnd(nb.length)],i=p.indexOf(x);
+    if(i>1)p=p.slice(0,i).reverse().concat(p.slice(i));
+  }
+  return p;
+}
+function pathEdges(p){const s=new Set();for(let i=1;i<p.length;i++)s.add(ek(p[i-1],p[i]));return s}
+function randomWalls(n,p,k){const pe=pathEdges(p),cand=edges(n).filter(([a,b])=>!pe.has(ek(a,b))),w=[];
+  while(w.length<k&&cand.length){const [a,b]=cand.splice(rnd(cand.length),1)[0];w.push(ek(a,b))}return w}
+function pickCps(N,k){const s=new Set();while(s.size<Math.min(k,N-2))s.add(1+rnd(N-2));return [...s].sort((a,b)=>a-b)}
+
+/* solver core: search routes; stop at the first that differs from `sol` (or count to 2 when sol is null) */
+function search(P,sol,maxN){
+  const {n,nums,pos,K}=P,N=n*n,end=pos[K-1];
+  const adj=[...Array(N)].map((_,c)=>nbrs(n,c).filter(d=>!P.walls.has(ek(c,d))));
+  const vis=new Uint8Array(N),stack=[pos[0]];let nodes=0,found=0,alt=null,abort=false;
+  const ok=(h,left)=>{if(!left)return true;const seen=new Uint8Array(N),q=[h];let cnt=0;seen[h]=1;
+    while(q.length){const c=q.pop();for(const d of adj[c])if(!vis[d]&&!seen[d]){seen[d]=1;cnt++;q.push(d)}}
+    if(cnt<left)return false;
+    for(let c=0;c<N;c++)if(!vis[c]&&c!==end){let dg=0;for(const d of adj[c])if(!vis[d]||d===h)dg++;if(dg<2)return false}
+    return true};
+  const done=()=>abort||alt||(!sol&&found>=2);
+  const go=(c,next)=>{
+    if(++nodes>maxN){abort=true;return}
+    if(stack.length===N){if(c===end){found++;if(sol&&stack.some((x,i)=>x!==sol[i]))alt=stack.slice()}return}
+    if(c===end)return;
+    for(const d of adj[c]){if(vis[d])continue;const v=nums[d];if(v&&v!==next)continue;
+      vis[d]=1;stack.push(d);if(ok(d,N-stack.length))go(d,v?next+1:next);stack.pop();vis[d]=0;if(done())return}
+  };
+  vis[pos[0]]=1;go(pos[0],2);return {found,alt,abort};
+}
+function countRoutes(P,maxN=600000){const r=search(P,null,maxN);return {sols:r.found,abort:r.abort}}
+/* a puzzle with exactly one solution: few numbers, walls added to block every other route */
+function genPuzzle(d,seed){
+  if(seed!=null)R=seeded(seed);
+  const st=typeof d==='string'?DIFF[d]:d,n=st.n,N=n*n,sol=randomPath(n),idx=[0];
+  while(idx[idx.length-1]<N-1){const last=idx[idx.length-1];idx.push(Math.min(N-1,last+st.gMin+rnd(st.gSpan)))}
+  const walls=new Set(randomWalls(n,sol,st.walls)),se=pathEdges(sol);let P;
+  for(let t=0;t<40;t++){
+    P=mkPuzzle(n,idx.map(i=>sol[i]),[...walls]);const r=search(P,sol,150000);
+    if(!r.alt&&!r.abort)break;
+    if(r.abort){let g=0,at=0;for(let i=1;i<idx.length;i++)if(idx[i]-idx[i-1]>g){g=idx[i]-idx[i-1];at=i}if(g<2)break;idx.splice(at,0,idx[at-1]+1+rnd(g-1));continue}
+    const cand=[];for(let i=1;i<r.alt.length;i++){const k=ek(r.alt[i-1],r.alt[i]);if(!se.has(k))cand.push(k)}
+    walls.add(cand[rnd(cand.length)]);
+  }
+  R=Math.random;return {P,sol};
+}
+
+/* ---------- daily ---------- */
+const dayKey=(d=new Date())=>d.toISOString().slice(0,10);           /* same UTC day for everyone */
+const dayNum=k=>+k.replace(/-/g,'');
+function dailyPuzzle(k){return genPuzzle('hard',dayNum(k)*2654435761%2147483647)}
+const niceDate=k=>new Date(k+'T12:00:00Z').toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'});
+function untilNext(){const now=new Date(),nx=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()+1));const m=Math.ceil((nx-now)/60000);return `${Math.floor(m/60)}h ${m%60}m`}
+
+
+/* ---------- share code ---------- */
+const AL='0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+function enc(P){
+  const te=new TextEncoder(),nm=te.encode(P.name||'').slice(0,20),tt=te.encode(P.title||'').slice(0,30);
+  const E=edges(P.n),wb=new Array(Math.ceil(E.length/8)).fill(0);
+  E.forEach(([a,b],i)=>{if(P.walls.has(ek(a,b)))wb[i>>3]|=1<<(i&7)});
+  const t=Math.min(65535,Math.round(P.target||0));
+  const B=[1,P.n,P.K,...P.pos,...wb,t>>8,t&255,nm.length,...nm,tt.length,...tt];
+  let o='',buf=0,bits=0;for(const b of B){buf=(buf<<8)|b;bits+=8;while(bits>=5){o+=AL[(buf>>(bits-5))&31];bits-=5}buf&=(1<<bits)-1}
+  if(bits)o+=AL[(buf<<(5-bits))&31];return o;
+}
+function dec(str){
+  str=str.includes('#')?str.split('#').pop():str;
+  str=str.toUpperCase().replace(/O/g,'0').replace(/[IL]/g,'1').replace(/[^0-9A-Z]/g,'');
+  const B=[];let buf=0,bits=0;
+  for(const ch of str){const v=AL.indexOf(ch);if(v<0)throw 0;buf=(buf<<5)|v;bits+=5;if(bits>=8){B.push((buf>>(bits-8))&255);bits-=8;buf&=(1<<bits)-1}}
+  let i=0;const g=()=>{if(i>=B.length)throw 0;return B[i++]};
+  if(g()!==1)throw 0;const n=g();if(n<3||n>9)throw 0;const K=g();if(K<2||K>n*n)throw 0;
+  const pos=[];for(let k=0;k<K;k++){const c=g();if(c>=n*n||pos.includes(c))throw 0;pos.push(c)}
+  const E=edges(n),w=[],wb=[];for(let k=0;k<Math.ceil(E.length/8);k++)wb.push(g());
+  E.forEach(([a,b],k)=>{if(wb[k>>3]&(1<<(k&7)))w.push(ek(a,b))});
+  const target=(g()<<8)|g(),td=new TextDecoder();
+  const nl=g(),name=td.decode(new Uint8Array(B.slice(i,i+nl)));i+=nl;
+  const tl=g(),title=td.decode(new Uint8Array(B.slice(i,i+tl)));
+  return mkPuzzle(n,pos,w,{name,title,target});
+}
+
+/* ---------- online leaderboard ----------
+   Paste your Firebase web config here (Firebase console > Project settings > Your apps > Web app).
+   Leave it as null to run without the online leaderboard. */
+const FIREBASE_CONFIG = null;   /* <- STEP: replace null with your config, for example:
+const FIREBASE_CONFIG = {
+  apiKey: "AIza...",
+  authDomain: "threadline-xxxx.firebaseapp.com",
+  projectId: "threadline-xxxx",
+  storageBucket: "threadline-xxxx.firebasestorage.app",
+  messagingSenderId: "1234567890",
+  appId: "1:1234567890:web:abc123"
+};  */
+const FB_VER = '10.12.2';
+
+/* the two games: where each keeps its daily results */
+const GAMES={
+  line:{name:'Line',rec:'tl-daily',save:'tl-dsave',field:'d',fb:'',size:'7 × 7'},
+  knots:{name:'Knots',rec:'tl-kdaily',save:'tl-kdsave',field:'k',fb:'k',size:'4 × 4'}};
+const dailyField=(k,g='line')=>GAMES[g].field+k.replace(/-/g,'');
+function streak(g='line'){const rec=store.get(GAMES[g].rec,{});let s=0,d=new Date();
+  if(!rec[dayKey(d)])d.setUTCDate(d.getUTCDate()-1);
+  while(rec[dayKey(d)]){s++;d.setUTCDate(d.getUTCDate()-1)}return s}
+
+let backend=null,backendTried=false;
+let me={name:store.get('tl-name','')};
+let friends=store.get('tl-friends',[]);
+const newLb=(g,tab)=>({g,day:null,rows:[],ready:false,err:'',unsub:null,tab:tab||'all',rankInfo:null,friendRows:null});
+const lbs={line:newLb('line'),knots:newLb('knots')};
+let lbGame='line';
+const hasClaude=typeof window.claude!=='undefined'&&window.claude&&typeof window.claude.use==='function';
+const validName=n=>/^[A-Za-z0-9_]{3,15}$/.test(n);
+
+/* Firebase: an invisible guest login per phone, a unique username, one score per person per day per game */
+async function fbBackend(){
+  const base=`https://www.gstatic.com/firebasejs/${FB_VER}/`;
+  const [A,Au,F]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')]);
+  const app=A.initializeApp(FIREBASE_CONFIG),auth=Au.getAuth(app),fs=F.getFirestore(app);
+  const u=await new Promise((res,rej)=>{const un=Au.onAuthStateChanged(auth,x=>{if(x){un();res(x)}else Au.signInAnonymously(auth).catch(rej)})});
+  const uid=u.uid,col=(day,g)=>F.collection(fs,'daily',GAMES[g].fb+day.replace(/-/g,''),'scores');
+  const rows=snap=>snap.docs.map(d=>({id:d.id,...d.data()}));
+  return {kind:'firebase',uid,
+    async myName(){const s=await F.getDoc(F.doc(fs,'users',uid));return s.exists()?s.data().name:null},
+    async claim(name){const n=name.toLowerCase();try{
+        const ref=F.doc(fs,'usernames',n),s=await F.getDoc(ref);if(s.exists())return s.data().uid===uid?'ok':'taken';
+        const b=F.writeBatch(fs);b.set(ref,{uid,name});b.set(F.doc(fs,'users',uid),{name});await b.commit();return 'ok'}
+      catch(e){return e&&e.code==='permission-denied'?'taken':'error'}},
+    async exists(name){const s=await F.getDoc(F.doc(fs,'usernames',name.toLowerCase()));return s.exists()?s.data().name:null},
+    subscribe(day,g,cb,err){return F.onSnapshot(F.query(col(day,g),F.orderBy('t'),F.limit(200)),s=>cb(rows(s),!s.metadata.fromCache),err)},
+    async post(day,t,g){try{const ref=F.doc(col(day,g),uid),s=await F.getDoc(ref);if(s.exists())return 'ok';
+        await F.setDoc(ref,{name:me.name,n:me.name.toLowerCase(),t:Math.round(t),at:F.serverTimestamp()});return 'ok'}catch(e){return 'error'}},
+    async rank(day,t,g){const [a,b]=await Promise.all([F.getCountFromServer(F.query(col(day,g),F.where('t','<',t))),F.getCountFromServer(col(day,g))]);return {rank:a.data().count+1,n:b.data().count}},
+    async friendsRows(day,list,g){const out=[];for(let i=0;i<list.length;i+=30){const s=await F.getDocs(F.query(col(day,g),F.where('n','in',list.slice(i,i+30))));out.push(...rows(s))}return out}
+  };
+}
+/* Preview on the Claude page: the page's own shared storage, same usernames */
+async function claudeBackend(){
+  const user=await window.claude.use('user'),db=await window.claude.use('db');if(!db||!user)throw 0;
+  const uid=await user.id();if(!uid)throw 0;
+  const ref=db.collection('scores').doc(uid);
+  return {kind:'claude',uid,
+    async myName(){const s=await ref.get();return s.exists?(s.data().name||null):null},
+    async claim(name){const n=name.toLowerCase();try{
+        const q=await db.collection('scores').where('n','==',n).get();if(q.docs.some(d=>d.id!==uid))return 'taken';
+        const s=await ref.get();if(s.exists)await ref.update({name,n});else await ref.set({name,n});return 'ok'}
+      catch(e){return e&&e.code==='invalid_argument'?'denied':'error'}},
+    async exists(name){const q=await db.collection('scores').where('n','==',name.toLowerCase()).get();return q.docs.length?q.docs[0].data().name:null},
+    subscribe(day,g,cb,err){const f=dailyField(day,g);
+      return db.collection('scores').where(f,'>',0).orderBy(f).limit(500).onSnapshot(s=>cb(s.docs.map(d=>{const x=d.data();return {id:d.id,name:x.name,n:x.n,t:x[f]}}),!s.metadata.fromCache),err)},
+    async post(day,t,g){const f=dailyField(day,g),body={[f]:t,name:me.name,n:me.name.toLowerCase()};try{
+        const s=await ref.get();if(s.exists){if(typeof s.data()[f]==='number')return 'ok';await ref.update(body)}else await ref.set(body);return 'ok'}
+      catch(e){return e&&e.code==='invalid_argument'?'denied':'error'}},
+    async rank(){return null},
+    async friendsRows(){return null}
+  };
+}
+async function initBackend(){
+  if(FIREBASE_CONFIG&&/^https?:/.test(location.protocol)){try{backend=await fbBackend()}catch(e){backend=null}}
+  if(!backend&&hasClaude){try{backend=await claudeBackend()}catch(e){backend=null}}
+  backendTried=true;
+  if(backend){try{const n=await backend.myName();if(n){me.name=n;store.set('tl-name',n)}else if(me.name){const r=await backend.claim(me.name);if(r==='taken'){me.name='';store.set('tl-name','')}}}catch(e){}
+    subscribeDay('line');subscribeDay('knots');postPending()}
+  refresh();
+  if(backend&&!me.name&&!store.get('tl-skipname',false)&&screen==='home')go('welcome');
+}
+function subscribeDay(g){
+  if(!backend)return;const k=dayKey(),L=lbs[g];if(L.day===k&&L.unsub)return;
+  if(L.unsub)L.unsub();const N=lbs[g]=newLb(g,L.tab);N.day=k;
+  const timer=setTimeout(()=>{if(!N.ready){N.err='slow';refresh()}},10000);
+  try{N.unsub=backend.subscribe(k,g,(rows,sure)=>{
+      if(sure){clearTimeout(timer);N.ready=true;if(N.err==='slow')N.err=''}
+      N.rows=rows.filter(r=>typeof r.t==='number');updateRank(g);refresh()},
+    ()=>{clearTimeout(timer);N.err='error';refresh()})}
+  catch(e){clearTimeout(timer);N.err='error';refresh()}
+}
+const rankBusy={};
+async function updateRank(g){
+  const L=lbs[g],mine=store.get(GAMES[g].rec,{})[L.day];if(mine==null||!backend||backend.kind!=='firebase'||rankBusy[g])return;
+  rankBusy[g]=true;try{L.rankInfo=await backend.rank(L.day,mine,g)}catch(e){}rankBusy[g]=false;refresh();
+}
+function standing(g='line'){
+  const L=lbs[g],mine=store.get(GAMES[g].rec,{})[L.day||dayKey()];if(mine==null||!backend)return null;
+  const beat=(r,n)=>n>1?Math.round((n-r)/(n-1)*100):100;
+  if(L.rankInfo&&L.rankInfo.n)return {...L.rankInfo,beat:beat(L.rankInfo.rank,L.rankInfo.n)};
+  const i=L.rows.findIndex(r=>r.id===backend.uid);if(i<0)return null;return {rank:i+1,n:L.rows.length,beat:beat(i+1,L.rows.length)};
+}
+async function postScore(k,t,g='line'){
+  if(!backend)return 'local';if(!me.name)return 'noname';
+  const r=await backend.post(k,t,g);if(r==='ok'){const p=store.get('tl-posted',{});p[g+':'+k]=1;store.set('tl-posted',p);updateRank(g)}return r;
+}
+function postPending(){const k=dayKey(),p=store.get('tl-posted',{});
+  for(const g of Object.keys(GAMES)){const mine=store.get(GAMES[g].rec,{})[k];
+    if(mine!=null&&me.name&&!p[g+':'+k]&&!(g==='line'&&p[k]))postScore(k,mine,g).then(refresh)}}
+async function addFriend(name,msgEl){
+  const n=name.trim().toLowerCase();if(!validName(n)){msgEl.textContent='Usernames are 3 to 15 letters, numbers or _.';return}
+  if(n===me.name.toLowerCase()){msgEl.textContent="That's you!";return}
+  if(friends.includes(n)){msgEl.textContent='Already your friend.';return}
+  msgEl.textContent='Looking…';let found=null;try{found=await backend.exists(n)}catch(e){msgEl.textContent="Couldn't check right now.";return}
+  if(!found){msgEl.textContent=`No player called ${name.trim()}.`;return}
+  friends.push(n);store.set('tl-friends',friends);lbs.line.friendRows=null;lbs.knots.friendRows=null;msgEl.textContent=`Added ${found}.`;renderLb();
+}
+
+/* ---------- screens ---------- */
+function show(id){document.querySelectorAll('.screen').forEach(s=>{const on=s.id===id;s.classList.toggle('hide',!on);s.classList.remove('in');if(on){void s.offsetWidth;s.classList.add('in')}})}
+let screen='home',afterName=null;
+function go(id){screen=id;show(id);if(id==='welcome'){$('#uName').value=me.name||'';$('#uMsg').textContent=''}refresh()}
+function refresh(){if(screen==='home')renderHome();else if(screen==='lbScreen')renderLb()}
+document.querySelectorAll('[data-go="home"]').forEach(b=>b.onclick=()=>go('home'));
+
+/* username */
+function askName(then){afterName=then||null;if(!backend){openSheet(`<h2>Leaderboard not available here</h2><p class="muted">The online leaderboard isn't connected in this version, so there's no username to pick yet. Your times are saved on this device.</p><button class="b p" id="sOk">OK</button>`);$('#sOk').onclick=closeSheet;return}go('welcome')}
+$('#uGo').onclick=async()=>{
+  const name=$('#uName').value.trim(),m=$('#uMsg');
+  if(!validName(name)){m.textContent='Use 3 to 15 letters, numbers or _ (no spaces).';return}
+  $('#uGo').disabled=true;m.textContent='Checking…';const r=await backend.claim(name);$('#uGo').disabled=false;
+  if(r==='taken'){m.textContent=`Sorry, ${name} is taken. Try another.`;return}
+  if(r==='error'){m.textContent="Couldn't reach the server. Check your connection and try again.";return}
+  me.name=name;store.set('tl-name',name);
+  if(r==='denied')store.set('tl-nopost',true);
+  postPending();const t=afterName;afterName=null;if(t)t();else go('home');
+};
+$('#uName').onkeydown=e=>{if(e.key==='Enter')$('#uGo').click()};
+$('#uSkip').onclick=()=>{store.set('tl-skipname',true);const t=afterName;afterName=null;if(t)t();else go('home')};
+$('#meChip').onclick=()=>{if(!me.name){askName();return}
+  const days=g=>Object.keys(store.get(GAMES[g].rec,{})).length,quick=k=>Object.values(store.get(k,{})).reduce((a,s)=>a+s.n,0);
+  openSheet(`<span class="av" style="background:${colorFor(me.name)};width:64px;height:64px;font-size:28px;justify-self:center">${esc(me.name[0].toUpperCase())}</span><h2>@${esc(me.name)}</h2>
+    <div class="stat"><div><b>${streak('line')}</b><span>Line streak</span></div><div><b>${streak('knots')}</b><span>Knots streak</span></div><div><b>${days('line')+days('knots')}</b><span>Daily puzzles</span></div><div><b>${allStars('line')+allStars('knots')}</b><span>Journey stars</span></div></div>
+    <p class="muted">${friends.length?`Friends: ${friends.map(esc).join(', ')}`:'Add friends from the leaderboard to compare times.'}</p><button class="b p" id="sOk">Done</button>`);$('#sOk').onclick=closeSheet};
+
+/* home: one switch for the two games */
+let hGame=store.get('tl-game','line');
+
+
+function renderHome(){
+  const g=hGame,G=GAMES[g],k=dayKey(),mine=store.get(G.rec,{})[k],st=standing(g),L=lbs[g];
+  if(backend&&L.day!==k)subscribeDay(g);
+  document.querySelectorAll('#gameSeg button').forEach(b=>b.classList.toggle('on',b.dataset.g===g));
+  $('#meChip').textContent=me.name?'@'+me.name:backend?'Pick a username':'';
+  $('#meChip').classList.toggle('hide',!me.name&&!backend);
+  $('#dKick').textContent=g==='line'?'Line · puzzle of the day':'Knots · puzzle of the day';
+  $('#dDate').textContent=niceDate(k);
+  $('#dSize').textContent=G.size;
+  $('#dCount').textContent=backend&&L.ready?`${L.rankInfo?L.rankInfo.n:L.rows.length} solved today`:'Same puzzle for everyone';
+  $('#dRules').textContent=g==='line'?'Draw one line through every square, hitting the numbers in order.':'Drag a number onto a matching neighbour to add them, or onto a ×2 / ×3 bubble to multiply. Finish with one number left.';
+  const sk=streak(g);
+  $('#dStat').innerHTML=mine!=null?`<div><b>${fmt(mine)}</b><span>Your time</span></div><div><b>${st?'#'+st.rank+' of '+st.n:'–'}</b><span>${st?'Faster than '+st.beat+'%':'Rank'}</span></div><div><b>${sk}</b><span>Day streak</span></div>`
+    :sk?`<div><b>${sk}</b><span>Day streak, keep it going</span></div>`:'';
+  $('#dStat').classList.toggle('hide',!$('#dStat').innerHTML);
+  $('#dPlay').textContent=mine!=null?'View solved puzzle':store.get(G.save,{}).day===k?'Continue':'Play today\'s puzzle';
+  $('#dNext').textContent=`New puzzles in ${untilNext()}`;
+  const nx=nextStep(g),S=nx.s||(nx.L?stageOf(nx.L):STAGES),[snm]=STAGE_INFO[S-1],ss=stStars(g,S);
+  $('#jTitle').textContent=`${G.name} journey`;$('#jStars').innerHTML=STAR+allStars(g);
+  $('#jStage').textContent=`Stage ${S} · ${snm} · ${ss}/${STAGE*3}★`;
+  $('#jFill').style.width=Math.min(100,ss/(STAGE*3)*100)+'%';
+  $('#jNote').textContent=nx.type==='level'?(g==='line'?`Level ${nx.L} · ${lineLevel(nx.L).n} × ${lineLevel(nx.L).n}`:`Level ${nx.L} · ${knotsLevel(nx.L).n} × ${knotsLevel(nx.L).n}${knotsLevel(nx.L).x3?' · ×2 ×3 bubbles':knotsLevel(nx.L).x2?' · ×2 bubble':''}`)
+    :nx.type==='bonus'?`Stage ${nx.s} done! Your bonus Sudoku is open.`:nx.type==='gate'?`Collect ${nx.need} more ★ in Stage ${nx.s} to open its bonus Sudoku.`:'Journey complete!';
+  $('#jPlay').textContent=nx.type==='level'?`Play level ${nx.L}`:nx.type==='bonus'?'Play bonus Sudoku':nx.type==='gate'?'Replay for stars':'Replay levels';
+}
+document.querySelectorAll('#gameSeg button').forEach(b=>b.onclick=()=>{hGame=b.dataset.g;store.set('tl-game',hGame);renderHome()});
+$('#dPlay').onclick=()=>hGame==='line'?startDaily():kStartDaily();
+$('#dBoard').onclick=()=>{lbGame=hGame;go('lbScreen')};
+$('#jPlay').onclick=()=>startStep(hGame,nextStep(hGame));
+$('#jMap').onclick=()=>openMap(hGame);
+$('#hCreate').onclick=()=>{go('create');goStep(ed.step)};
+$('#hJoin').onclick=()=>go('join');
+setInterval(()=>{if(screen==='home')$('#dNext').textContent=`New puzzles in ${untilNext()}`},30000);
+
+const COLORS=['#f6a9bd','#a9cdf2','#9edcbf','#bfaef0','#f7c88c','#d8668b','#8b82c4'];
+const colorFor=id=>COLORS[[...String(id)].reduce((a,c)=>a+c.charCodeAt(0),0)%COLORS.length];
+async function loadFriendRows(g){
+  const L=lbs[g];if(!backend||L.friendRows||!friends.length)return;
+  try{const r=await backend.friendsRows(L.day,friends,g);L.friendRows=r||'local'}catch(e){L.friendRows='local'}renderLb();
+}
+function renderLb(){
+  const g=lbGame,G=GAMES[g],L=lbs[g],k=dayKey(),C=$('#lbC'),mine=store.get(G.rec,{})[k];
+  $('#lbSub').textContent=`${G.name} · ${niceDate(k)}`;
+  const gseg=`<div class="seg"><button data-lg="line" class="${g==='line'?'on':''}">Line</button><button data-lg="knots" class="${g==='knots'?'on':''}">Knots</button></div>`;
+  const wire=()=>C.querySelectorAll('[data-lg]').forEach(b=>b.onclick=()=>{lbGame=b.dataset.lg;renderLb()});
+  if(!backend){C.innerHTML=gseg+`<div class="card empty"><b style="font-size:18px">${backendTried?'Leaderboard not connected':'Connecting…'}</b><p class="muted">${backendTried?'The online leaderboard isn\'t set up in this version. ':''}${mine!=null?`Your time today: <b>${fmt(mine)}</b>, saved on this device.`:''}</p></div>`;wire();return}
+  if(L.err==='error'){C.innerHTML=gseg+`<div class="card empty"><b>The leaderboard can't be reached right now.</b><p class="muted">Check your connection. Your own time is saved on this device.</p></div>`;wire();return}
+  if(!L.ready){C.innerHTML=gseg+`<div class="card empty"><p class="muted">${L.err==='slow'?'Still loading the leaderboard…':'Loading…'}</p></div>`;wire();return}
+  const tabs=`<div class="seg"><button data-t="all" class="${L.tab==='all'?'on':''}">Everyone</button><button data-t="friends" class="${L.tab==='friends'?'on':''}">Friends${friends.length?' · '+friends.length:''}</button></div>`;
+  let list=L.rows;
+  if(L.tab==='friends'){
+    if(L.friendRows&&L.friendRows!=='local'){const own=L.rows.find(r=>r.id===backend.uid);list=[...L.friendRows,...(own?[own]:[])].filter((r,i,a)=>a.findIndex(x=>x.id===r.id)===i).sort((a,b)=>a.t-b.t)}
+    else list=L.rows.filter(r=>r.id===backend.uid||friends.includes((r.n||'').toLowerCase()));
+    if(friends.length&&!L.friendRows)loadFriendRows(g);
+  }
+  const rows=list.map((r,i)=>{const isMe=r.id===backend.uid,nm=r.name||'player',fr=friends.includes((r.n||nm).toLowerCase());
+    return `<li class="${isMe?'me':''}"><span class="rk">${i+1}</span><span class="av" style="background:${colorFor(nm)}">${esc(nm[0].toUpperCase())}</span><span class="nm">${isMe?'You':'@'+esc(nm)}</span><span class="tm">${fmt(r.t)}</span>${!isMe&&!fr&&L.tab==='all'&&me.name?`<button class="add" data-n="${esc(nm)}" aria-label="Add ${esc(nm)} as a friend">+</button>`:'<span></span>'}</li>`}).join('');
+  const addBox=L.tab==='friends'?`<div class="card" style="margin-bottom:12px"><b>Add a friend</b><div class="row" style="flex-wrap:nowrap"><input id="fAdd" placeholder="Their username" autocapitalize="off" autocomplete="off"><button class="b p" id="fGo">Add</button></div><p class="msg" id="fMsg"></p></div>`:'';
+  let top;
+  if(mine==null){
+    top=`<div class="you"><span class="muted">${L.rows.length} ${L.rows.length===1?'person has':'people have'} solved today's ${G.name} puzzle</span><b style="font-size:26px">Solve it to see where you stand</b><button class="b p" id="lbPlay" style="justify-self:center;margin-top:8px">Play today's puzzle</button></div>`;
+  }else{
+    const st=standing(g);
+    top=`<div class="you"><span class="muted">Your time</span><b>${fmt(mine)}</b><span class="muted">${
+      !me.name?'':st?(st.n>1?`#${st.rank} of ${st.n} today · faster than ${st.beat}% of players`:'First to solve today!'):store.get('tl-nopost',false)?'Saved on this device only.':'Posting your time…'}</span>${
+      !me.name?'<button class="b p" id="lbName" style="justify-self:center;margin-top:8px">Pick a username to join the board</button>':''}</div>`;
+  }
+  const body=list.length?`<ul class="lb ${mine==null?'locked':''}" ${mine==null?'aria-hidden="true"':''}>${rows}</ul>`
+    :`<div class="card empty"><p class="muted">${L.tab==='friends'?(friends.length?'None of your friends have solved it yet.':'Add friends by username to compare times.'):'No one has solved it yet. Be the first!'}</p></div>`;
+  C.innerHTML=gseg+top+tabs+addBox+body;wire();
+  C.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{L.tab=b.dataset.t;renderLb()});
+  C.querySelectorAll('.add').forEach(b=>b.onclick=()=>{addFriend(b.dataset.n,{set textContent(v){}});b.textContent='✓';b.disabled=true});
+  if($('#lbPlay'))$('#lbPlay').onclick=()=>g==='line'?startDaily():kStartDaily();
+  if($('#lbName'))$('#lbName').onclick=()=>askName(()=>go('lbScreen'));
+  if($('#fGo')){$('#fGo').onclick=()=>addFriend($('#fAdd').value,$('#fMsg'));$('#fAdd').onkeydown=e=>{if(e.key==='Enter')$('#fGo').click()}}
+}
+
+/* ---------- game ---------- */
+let P=null,path=[],cur={kind:'quick'},t0=0,tEnd=0,done=false,hints=0,hintCell=null,hintT=null,lastSetHash='';
+const gB=$('#gBoard'),eB=$('#eBoard');
+function svgFor({n,nums,walls,line,faintLine,tint,hits,head,edgeDots,hint}){
+  const ctr=c=>[(c%n)+.5,Math.floor(c/n)+.5];
+  let s=`<svg viewBox="-.08 -.08 ${n+.16} ${n+.16}"><rect class="bg" x="0" y="0" width="${n}" height="${n}" rx=".15"/>`;
+  for(const c of tint)s+=`<rect class="ti" x="${c%n}" y="${Math.floor(c/n)}" width="1" height="1"/>`;
+  for(let i=1;i<n;i++)s+=`<line class="gl" x1="${i}" y1="0" x2="${i}" y2="${n}"/><line class="gl" x1="0" y1="${i}" x2="${n}" y2="${i}"/>`;
+  if(edgeDots)for(const [a,b] of edges(n)){const [x1,y1]=ctr(a),[x2,y2]=ctr(b);s+=`<circle class="ed" cx="${(x1+x2)/2}" cy="${(y1+y2)/2}" r=".05"/>`}
+  if(line.length){const pts=line.map(c=>ctr(c).join(',')).join(' ');
+    s+=line.length>1?`<polyline class="pa${faintLine?' faint':''}" points="${pts}"/>`:`<circle cx="${ctr(line[0])[0]}" cy="${ctr(line[0])[1]}" r=".21" style="fill:var(--path)"/>`}
+  for(const k of walls){const [a,b]=k.split('-').map(Number),r=Math.floor(a/n),c=a%n;
+    s+=b===a+1?`<line class="wa" x1="${c+1}" y1="${r}" x2="${c+1}" y2="${r+1}"/>`:`<line class="wa" x1="${c}" y1="${r+1}" x2="${c+1}" y2="${r+1}"/>`}
+  nums.forEach((v,c)=>{if(!v)return;const [x,y]=ctr(c);s+=`<circle class="nc${hits.has(c)?' hit':''}" cx="${x}" cy="${y}" r=".31"/><text class="nt" x="${x}" y="${y}">${v}</text>`});
+  if(hint!=null){const [x,y]=ctr(hint);s+=`<circle class="hint" cx="${x}" cy="${y}" r=".42"/>`}
+  if(head!=null){const [x,y]=ctr(head);s+=`<circle class="hd" cx="${x}" cy="${y}" r=".4"/>`}
+  return s+'</svg>';
+}
+function drawGame(){if(P)gB.innerHTML=svgFor({n:P.n,nums:P.nums,walls:P.walls,line:path,tint:path,hits:new Set(path.filter(c=>P.nums[c])),head:done?null:path[path.length-1],hint:hintCell})}
+const reached=()=>path.reduce((m,c)=>m+(P.nums[c]?1:0),0);
+const elapsed=()=>done?tEnd:t0?(performance.now()-t0)/1000+hints*(cur.kind==='daily'?HINT_PENALTY:0):0;
+function tick(){
+  $('#gClock').textContent=fmt(elapsed());
+  if(P)$('#gProg').textContent=done?'Complete!':!path.length?'Press on 1 and drag':`Next number: ${Math.min(reached()+1,P.K)} · ${path.length}/${P.n*P.n} squares`;
+}
+setInterval(()=>{if(t0&&!done&&screen==='game')tick()},250);
+function loadGame(p,c,resume){
+  P=p;cur=c;path=[];done=false;t0=0;tEnd=0;hints=0;hintCell=null;closeSheet();
+  const b=$('#gBanner');b.classList.add('hide');
+  if(c.kind==='daily'){$('#gTitle').textContent='Puzzle of the day';$('#gSub').textContent=`${niceDate(c.day)} · 7 × 7 · Hard`}
+  else if(c.kind==='quick'){$('#gTitle').textContent=DIFF[c.d].name;$('#gSub').textContent=`${p.n} × ${p.n} · one solution`}
+  else if(c.kind==='level'){$('#gTitle').textContent=`Line · Level ${c.L}`;$('#gSub').textContent=`Stage ${stageOf(c.L)} · ${p.n} × ${p.n} · 3★ under ${fmt(linePar(p.n))}`}
+  else if(c.kind==='challenge'){$('#gTitle').textContent=p.title||'Challenge';$('#gSub').textContent=`From ${p.name||'a friend'} · ${p.n} × ${p.n}`;
+    b.classList.remove('hide');b.innerHTML=`<b>${esc(p.name||'A friend')}</b> challenged you. ${p.target?`Time to beat: <b>${fmt(p.target)}</b>`:'No time set, just solve it.'}`}
+  else{$('#gTitle').textContent='Play-test';$('#gSub').textContent='Your solve time becomes the time to beat'}
+  $('#gHint').classList.toggle('hide',!c.sol);
+  $('#gHintL').textContent=c.kind==='daily'?`Hint +${HINT_PENALTY}s`:'Hint';
+  if(resume){path=resume.path.slice();hints=resume.hints||0;t0=performance.now()-(resume.secs||0)*1000;if(resume.solved){done=true;tEnd=resume.solved}}
+  screen='game';show('game');tick();drawGame();
+}
+function startDaily(){
+  const k=dayKey(),{P:p,sol}=dailyPuzzle(k),rec=store.get('tl-daily',{}),sv=store.get('tl-dsave',{});
+  if(rec[k]!=null){loadGame(p,{kind:'daily',day:k,sol},{path:sol,secs:rec[k],solved:rec[k]});return}
+  loadGame(p,{kind:'daily',day:k,sol},sv.day===k?sv:null);
+}
+function saveDaily(){if(cur.kind==='daily'&&!done&&t0)store.set('tl-dsave',{day:cur.day,path,hints,secs:(performance.now()-t0)/1000})}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveDaily()});
+$('#gBack').onclick=()=>{saveDaily();if(cur.kind==='test'){go('create');goStep(3)}else if(cur.kind==='level')openMap('line');else{hGame='line';go('home')}};
+function step(c){
+  if(done)return false;
+  if(!path.length){if(P.nums[c]===1){path=[c];if(!t0)t0=performance.now();return true}return false}
+  const i=path.indexOf(c);if(i>=0){if(i<path.length-1){path.length=i+1;return true}return false}
+  const last=path[path.length-1];
+  if(!adjC(P.n,last,c)||P.walls.has(ek(last,c))||P.nums[last]===P.K)return false;
+  if(P.nums[c]&&P.nums[c]!==reached()+1)return false;
+  path.push(c);return true;
+}
+function stepToward(c,fn,p,n){
+  if(!p.length||p.includes(c))return fn(c);
+  let last=p[p.length-1],moved=false;
+  const r1=Math.floor(last/n),c1=last%n,r2=Math.floor(c/n),c2=c%n;
+  if(r1!==r2&&c1!==c2)return false;
+  const d=r1===r2?Math.sign(c2-c1):Math.sign(r2-r1)*n;
+  while(last!==c){if(!fn(last+d))break;last+=d;moved=true}
+  return moved;
+}
+$('#gUndo').onclick=()=>{if(!done&&path.length){path.pop();drawGame();tick()}};
+$('#gRestart').onclick=()=>{if(done)return;path=[];hintCell=null;drawGame();tick()};
+$('#gHint').onclick=()=>{
+  if(done||!cur.sol)return;const s=cur.sol;let k=0;while(k<path.length&&path[k]===s[k])k++;
+  if(k===0){path=[s[0]];if(!t0)t0=performance.now();k=1}else path.length=k;
+  hints++;hintCell=s[k];clearTimeout(hintT);hintT=setTimeout(()=>{hintCell=null;drawGame()},1800);drawGame();tick();
+};
+function checkWin(){
+  if(path.length!==P.n*P.n||P.nums[path[path.length-1]]!==P.K)return;
+  tEnd=Math.round(elapsed());done=true;hintCell=null;drawGame();tick();setTimeout(win,350);
+}
+async function win(){
+  const t=tEnd;
+  if(cur.kind==='daily'){
+    const k=cur.day,rec=store.get('tl-daily',{});if(rec[k]==null){rec[k]=t;store.set('tl-daily',rec)}store.set('tl-dsave',{});
+    openSheet(`<span class="muted">Puzzle of the day · solved</span><div class="big">${fmt(t)}</div><p class="muted" id="sRank">${hints?`Includes ${hints*HINT_PENALTY}s of hint time. `:''}${backend&&me.name?'Posting your time…':''}</p>
+      <div class="row"><button class="b p" id="sLb">See leaderboard</button><button class="b" id="sShare">Copy result</button></div><button class="b" id="sHome">Home</button><p class="msg" id="sMsg"></p>`);
+    $('#sLb').onclick=()=>{closeSheet();lbGame='line';go('lbScreen')};$('#sHome').onclick=()=>{closeSheet();go('home')};
+    $('#sShare').onclick=()=>{const st=standing();copy(`Threadline · ${niceDate(k)}\nSolved in ${fmt(t)}${st&&st.n>1?` · #${st.rank} of ${st.n}`:''}${streak()>1?` · ${streak()}-day streak`:''}`,$('#sMsg'))};
+    if(backend&&!me.name){const n=$('#sRank');n.innerHTML+=` Pick a username to join today's leaderboard.`;$('#sLb').textContent='Pick a username';$('#sLb').onclick=()=>{closeSheet();askName(()=>{lbGame='line';go('lbScreen')})};return}
+    const r=await postScore(k,t);
+    const note=$('#sRank');if(!note)return;
+    const pre=hints?`Includes ${hints*HINT_PENALTY}s of hint time. `:'';
+    if(r==='ok'){note.textContent=pre+'Checking your rank…';for(let i=0;i<20&&!standing();i++)await new Promise(z=>setTimeout(z,250))}
+    const st=standing();
+    note.textContent=pre+(r==='ok'&&st?(st.n>1?`You're #${st.rank} of ${st.n} today, faster than ${st.beat}% of players.`:'You\'re the first to solve today!')
+      :r==='ok'?'Posted to the leaderboard.'
+      :r==='denied'?'Saved on this device. This preview can\'t post your time.'
+      :r==='error'?'Saved on this device. The leaderboard couldn\'t be reached.':'Saved on this device.');
+  }else if(cur.kind==='level'){levelWin('line',cur.L,t,hints,linePar(P.n));
+  }else if(cur.kind==='quick'){
+    const q=store.get('tl-quick',{}),s=q[cur.d]||{n:0,best:0};const pb=!s.best||t<s.best;s.n++;if(pb)s.best=t;q[cur.d]=s;store.set('tl-quick',q);
+    openSheet(`<span class="muted">${DIFF[cur.d].name} · ${P.n} × ${P.n}</span><div class="big">${fmt(t)}</div><p class="muted">${pb?'New personal best!':`Your best: ${fmt(s.best)}`}${hints?` · ${hints} hint${hints>1?'s':''}`:''}</p>
+      <div class="row"><button class="b" id="sHome">Home</button><button class="b p" id="sNext">Next puzzle</button></div>`);
+    $('#sHome').onclick=()=>{closeSheet();go('home')};$('#sNext').onclick=()=>{const {P:p,sol}=genPuzzle(cur.d);loadGame(p,{kind:'quick',d:cur.d,sol})};
+  }else if(cur.kind==='test'){
+    ed.target=Math.ceil(t);
+    openSheet(`<h2>Solved in ${fmt(t)}</h2><p class="muted">That's now the time your friends have to beat.</p><button class="b p" id="sBack">Back to sharing</button>`);
+    $('#sBack').onclick=()=>{closeSheet();go('create');goStep(3)};
+  }else{
+    let line=`Solved in ${fmt(t)}.`,msg=`I solved ${P.title?'“'+P.title+'”':'your Threadline puzzle'} in ${fmt(t)}`;
+    if(P.target){const d=Math.round(P.target-t);
+      line+=d>0?` You beat ${esc(P.name||'them')} by ${fmt(d)}!`:d===0?' Dead heat!':` ${esc(P.name||'They')} was faster by ${fmt(-d)}.`;
+      msg+=d>0?`, ${fmt(d)} faster than you.`:d===0?', exactly your time.':`, you still have me by ${fmt(-d)}.`}else msg+='.';
+    openSheet(`<h2>Challenge done!</h2><p class="muted" style="color:var(--ink)">${line}</p>
+      <div class="row"><button class="b p" id="sCopy">Copy result</button><button class="b" id="sMake">Make one back</button></div>
+      <button class="b" id="sHome">Home</button><p class="msg" id="sMsg"></p>`);
+    $('#sCopy').onclick=()=>copy(msg+' Your move.',$('#sMsg'));
+    $('#sMake').onclick=()=>{closeSheet();go('create');goStep(ed.step)};$('#sHome').onclick=()=>{closeSheet();go('home')};
+  }
+}
+function openSheet(html){$('#sheetC').innerHTML=html;$('#sheet').classList.remove('hide')}
+function closeSheet(){$('#sheet').classList.add('hide')}
+$('#sheet').onclick=e=>{if(e.target.id==='sheet')closeSheet()};
+
+/* ---------- Knots: merge matching neighbours (and ×2 / ×3 bubbles) until one number is left ----------
+   cells: a positive number, a negative bubble (-2 = ×2, -3 = ×3) or 0 for an empty square */
+const kRes=(x,y)=>x>0&&y>0?(x===y?x+y:0):x>0&&y<0?x*-y:x<0&&y>0?y*-x:0;
+function kMoves(n,c){const m=[];for(let a=0;a<c.length;a++){if(!c[a])continue;for(const b of nbrs(n,a))if(c[b]&&kRes(c[a],c[b]))m.push([a,b])}return m}
+/* quick impossibility checks: squares never move, so everything left must stay connected;
+   with no bubbles left, the smallest numbers can only ever pair off with each other */
+function kHopeless(n,c){
+  const live=[];let bub=0;for(let i=0;i<c.length;i++)if(c[i]){live.push(i);if(c[i]<0)bub++}
+  if(live.length<=1)return live.length===1&&c[live[0]]<0;
+  const seen=new Set([live[0]]),q=[live[0]];while(q.length){const x=q.pop();for(const y of nbrs(n,x))if(c[y]&&!seen.has(y)){seen.add(y);q.push(y)}}
+  if(seen.size<live.length)return true;
+  if(bub)return false;
+  let mn=Infinity;for(const i of live)mn=Math.min(mn,c[i]);
+  const mins=live.filter(i=>c[i]===mn);if(mins.length%2)return true;
+  const match=new Map();const tryM=(u,vis)=>{for(const v of nbrs(n,u)){if(c[v]!==mn||vis.has(v))continue;vis.add(v);if(!match.has(v)||tryM(match.get(v),vis)){match.set(v,u);match.set(u,v);return true}}return false};
+  for(const u of mins){if(match.has(u))continue;if(!tryM(u,new Set([u])))return true}
+  return false;
+}
+function kSolve(n,cells,maxN=300000){const seen=new Set();let nodes=0,abort=false;const path=[];
+  const go=c=>{let live=0,last=0;for(const v of c)if(v){live++;last=v}if(live===1)return last>0;if(++nodes>maxN){abort=true;return false}
+    const key=c.join(',');if(seen.has(key))return false;seen.add(key);if(kHopeless(n,c))return false;
+    const ms=kMoves(n,c).sort((x,y)=>Math.abs(c[x[0]])-Math.abs(c[y[0]]));
+    for(const [a,b] of ms){const va=c[a],vb=c[b];c[b]=kRes(va,vb);c[a]=0;path.push([a,b]);if(go(c))return true;path.pop();c[a]=va;c[b]=vb;if(abort)return false}return false};
+  const ok=go(cells.slice());return ok?{moves:path}:{moves:null,abort}}
+function kTrap(n,c,cap){const ms=kMoves(n,c);if(!ms.length)return 0;let bad=0;for(const [a,b] of ms){const x=c.slice();x[b]=kRes(x[a],x[b]);x[a]=0;const s=kSolve(n,x,cap);if(!s.moves&&!s.abort)bad++}return bad/ms.length}
+/* built backwards from one number: split it into equal neighbours, or "un-multiply" it beside a bubble,
+   so every board has a known solution. opts {n,tiles:[lo,hi],x2,x3,trap:[lo,hi]|null,tries} */
+function genKnots(o,seed){
+  if(seed!=null)R=seeded(seed);const n=o.n,N=n*n;let best=null;
+  for(let att=0;att<(o.tries||60);att++){
+    const T=o.tiles[0]+rnd(o.tiles[1]-o.tiles[0]+1),e=Math.ceil(Math.log2(T))+1+rnd(3);
+    let q2=o.x2||0,q3=o.x3||0;
+    const c=new Array(N).fill(0);c[rnd(N)]=2**e*3**q3;const merges=[];let filled=1,ok=true;
+    while(filled<T){const cand=[];
+      for(let a=0;a<N;a++){const v=c[a];if(v<=0)continue;for(const b of nbrs(n,a))if(!c[b]){
+        if(v%2===0)cand.push([a,b,'s']);
+        if(q3&&v%3===0)cand.push([a,b,3],[a,b,3]);
+        if(q2&&v%2===0)cand.push([a,b,2]);}}
+      if(!cand.length){ok=false;break}
+      let pick=cand[rnd(cand.length)];
+      if(q2+q3>=T-filled){const bc=cand.filter(x=>x[2]!=='s');if(!bc.length){ok=false;break}pick=bc[rnd(bc.length)]}
+      const [a,b,t]=pick,v=c[a];
+      if(t==='s'){c[a]=v/2;c[b]=v/2}
+      else{if(R()<.5){c[a]=-t;c[b]=v/t}else{c[a]=v/t;c[b]=-t}if(t===3)q3--;else q2--}
+      merges.push([b,a]);filled++}
+    if(!ok||q2||q3)continue;
+    const g={n,cells:c,sol:merges.reverse()};
+    if(!o.trap){best=g;break}
+    const tf=kTrap(n,c,20000);if(tf>=o.trap[0]&&tf<=o.trap[1]){best=g;break}if(!best)best=g;
+  }
+  R=Math.random;return best;
+}
+const kDaily=k=>genKnots({n:4,tiles:[15,16],x2:1,x3:1,trap:[.35,1],tries:40},(dayNum(k)*2246822519+7)%2147483647);
+const KCOL=['#fde6ee','#ffe3cc','#fff1b8','#d8f2df','#d6e8fb','#e6dcfb','#f6c9d6','#f9d3a9','#f3e18a','#b8e3c6','#b5d3f3','#cbbcf2','#f4b3c6','#c7b6ee'];
+
+/* ---------- journey: stages of 10 levels, a bonus Sudoku after each stage ---------- */
+const STAGE=10,STAGES=10,MAXL=STAGE*STAGES,GATE=15;
+const STAGE_INFO=[['Blossom','#fde6ee','#f6a9bd'],['Cloud','#e3effc','#a9cdf2'],['Lagoon','#dff4ea','#9edcbf'],['Lilac','#ece3fb','#bfaef0'],['Sunset','#fff0dc','#f7c88c'],
+  ['Mint','#e2f6ee','#8fd6b6'],['Peach','#ffe8de','#f5b096'],['Bluebell','#e4e8fb','#a3adee'],['Honey','#fff5d6','#f0cf6b'],['Starlight','#efe4f7','#c9a2e6']];
+const stageOf=L=>Math.ceil(L/STAGE);
+function lineLevel(L){let n,t,gMin,gSpan,walls;   /* starts at Medium 6×6, ends at Expert 8×8 */
+  if(L<=20){n=6;t=(L-1)/19;gMin=4+Math.round(t);gSpan=3+Math.round(t*2);walls=2+Math.round(t*2)}
+  else if(L<=50){n=7;t=(L-21)/29;gMin=5+Math.round(t*2);gSpan=4+Math.round(t*2);walls=4+Math.round(t*3)}
+  else{n=8;t=Math.min(1,(L-51)/49);gMin=6+Math.round(t*3);gSpan=5+Math.round(t*2);walls=6+Math.round(t*3)}
+  return {n,gMin,gSpan,walls}}
+function knotsLevel(L){   /* starts at Medium 4×4; bubbles arrive at level 3 (×2) and 12 (×3); 5×5 from level 31 */
+  if(L<=30){const t=(L-1)/29;return {n:4,tiles:[11+Math.round(t*4),12+Math.round(t*4)],x2:L>=3?1:0,x3:L>=12?1:0,trap:[.2+.25*t,1],tries:40}}
+  const t=Math.min(1,(L-31)/69);return {n:5,tiles:[17+Math.round(t*3),18+Math.round(t*3)],x2:1+(L>=60?1:0),x3:L>=45?1:0,trap:null}}
+const linePar=n=>Math.round(n*n*2.5),knotsPar=tiles=>tiles*7,SD_PAR=240;
+const starsFor=(hints,t,par)=>hints?1:t<=par?3:2;
+
+let J=store.get('tl-journey',null)||{line:{st:{},bonus:{}},knots:{st:{},bonus:{}}};
+const jSave=()=>store.set('tl-journey',J);
+const lvDone=(g,L)=>!!J[g].st[L];
+const stStars=(g,s)=>{let t=0;for(let L=(s-1)*STAGE+1;L<=s*STAGE;L++)t+=J[g].st[L]||0;return t};
+const allStars=g=>Object.values(J[g].st).reduce((a,b)=>a+b,0)+Object.values(J[g].bonus).reduce((a,b)=>a+b,0);
+const bonusDone=(g,s)=>!!J[g].bonus[s];
+const stageComplete=(g,s)=>{for(let L=(s-1)*STAGE+1;L<=s*STAGE;L++)if(!lvDone(g,L))return false;return true};
+const bonusOpen=(g,s)=>stageComplete(g,s)&&stStars(g,s)>=GATE;
+const stageOpen=(g,s)=>s===1||bonusDone(g,s-1);
+const lvOpen=(g,L)=>L===1||(lvDone(g,L-1)&&((L-1)%STAGE!==0||bonusDone(g,stageOf(L-1))));
+function nextStep(g){
+  for(let L=1;L<=MAXL;L++){if(lvDone(g,L))continue;
+    if(lvOpen(g,L))return {type:'level',L};
+    const s=stageOf(L-1);return bonusOpen(g,s)?{type:'bonus',s}:{type:'gate',s,need:GATE-stStars(g,s)}}
+  for(let s=1;s<=STAGES;s++)if(!bonusDone(g,s))return bonusOpen(g,s)?{type:'bonus',s}:{type:'gate',s,need:GATE-stStars(g,s)};
+  return {type:'done'};
+}
+function startLevel(g,L){
+  if(g==='line'){const {P:p,sol}=genPuzzle(lineLevel(L),L*7919+11);loadGame(p,{kind:'level',L,sol})}
+  else kStart(genKnots(knotsLevel(L),L*104729+3),{kind:'level',L});
+}
+function startStep(g,st){if(st.type==='level')startLevel(g,st.L);else if(st.type==='bonus')sdStart(g,st.s);else openMap(g)}
+/* the end-of-level sheet, shared by both games */
+function levelWin(g,L,t,hints,par){
+  const s=starsFor(hints,t,par),prev=J[g].st[L]||0;J[g].st[L]=Math.max(prev,s);jSave();
+  const S=stageOf(L),nx=nextStep(g);
+  const tip=s===3?'Perfect!':s===2?`Finish under ${fmt(par)} for 3 stars.`:'Solve it without hints for more stars.';
+  let nextLabel='Next level',nextAct=()=>startLevel(g,L+1),note='';
+  if(L%STAGE===0||!lvOpen(g,L+1)){
+    if(bonusOpen(g,S)&&!bonusDone(g,S)){nextLabel='Bonus Sudoku';nextAct=()=>sdStart(g,S);note=`Stage ${S} complete! Your bonus Sudoku is open.`}
+    else if(stageComplete(g,S)&&!bonusDone(g,S)){nextLabel='Replay for ★';nextAct=()=>{closeSheet();openMap(g)};note=`Collect ${GATE-stStars(g,S)} more ★ in Stage ${S} to open the bonus. Replay levels for more stars.`}
+    else if(nx.type==='level'){nextAct=()=>startLevel(g,nx.L);nextLabel=`Level ${nx.L}`}
+    else{nextLabel='Levels';nextAct=()=>{closeSheet();openMap(g)}}
+  }
+  openSheet(`<div class="bigstars">${starRow(s)}</div><h2>Level ${L} complete!</h2>
+    <p class="muted">Time ${fmt(t)}${hints?` · ${hints} hint${hints>1?'s':''}`:''}. ${tip}${note?`<br><b style="color:var(--accent)">${note}</b>`:''}</p>
+    <div class="row"><button class="b" id="sPrev"${L===1?' disabled':''}>Previous</button><button class="b" id="sMap">Levels</button><button class="b p" id="sNext"${L>=MAXL&&nx.type!=='bonus'?' disabled':''}>${nextLabel}</button></div>
+    <button class="b" id="sAgain">Play again</button>`);
+  $('#sPrev').onclick=()=>startLevel(g,L-1);$('#sMap').onclick=()=>{closeSheet();openMap(g)};$('#sNext').onclick=nextAct;$('#sAgain').onclick=()=>startLevel(g,L);
+}
+
+/* ---------- level map ---------- */
+const STAR='<svg viewBox="0 0 24 24"><path d="M12 2l3 6.9 7.5.7-5.7 5 1.7 7.4L12 18.2 5.5 22l1.7-7.4-5.7-5 7.5-.7z"/></svg>';
+const starRow=k=>[0,1,2].map(i=>STAR.replace('<svg','<svg class="'+(i<k?'on':'')+'"')).join('');
+const LOCK='<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+const SDICON='<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M3 15h18M12 3v18"/></svg>';
+let mapGame='line';
+function openMap(g){
+  mapGame=g;const ROW=96,nx=nextStep(g);let h='';
+  $('#mTitle').textContent=g==='line'?'Line levels':'Knots levels';
+  $('#mStars').innerHTML=STAR+allStars(g);
+  for(let s=STAGES;s>=1;s--){
+    const [nm,bg,c]=STAGE_INFO[s-1],H=STAGE*ROW+170,pts=[],open=stageOpen(g,s);let nodes='';
+    for(let i=0;i<STAGE;i++){
+      const L=(s-1)*STAGE+i+1,y=H-60-i*ROW,x=50+24*Math.sin(L*.85);pts.push(`${x},${y}`);
+      const st=J[g].st[L]||0,lock=!lvOpen(g,L),cur=nx.type==='level'&&nx.L===L;
+      nodes+=`<button class="node${lock?' lock':st?' done':''}${cur?' cur':''}" style="left:${x}%;top:${y-31}px" data-l="${L}" aria-label="Level ${L}${lock?', locked':''}">${lock?LOCK:L}</button>`;
+      if(st)nodes+=`<div class="nst" style="left:${x}%;top:${y+34}px">${starRow(st)}</div>`;
+    }
+    const by=H-60-STAGE*ROW+10,bx=50;pts.push(`${bx},${by}`);
+    const bs=J[g].bonus[s]||0,bOpen=bonusOpen(g,s),bCur=nx.type==='bonus'&&nx.s===s;
+    nodes+=`<button class="node bonus${bs?' done':bOpen?'':' lock'}${bCur?' cur':''}" style="left:${bx}%;top:${by-36}px" data-b="${s}" aria-label="Stage ${s} bonus Sudoku">${SDICON}</button>`;
+    nodes+=`<div class="nst" style="left:${bx}%;top:${by+40}px">${bs?starRow(bs):`<small>${stStars(g,s)}/${GATE}★</small>`}</div>`;
+    h+=`<div class="world${open?'':' closed'}" style="height:${H}px;background:${bg};--wc:${c}">
+      <h3>Stage ${s} · ${nm}<small>${stStars(g,s)}/${STAGE*3} stars${bs?' · bonus done':''}</small></h3>
+      <svg class="trail" viewBox="0 0 100 ${H}" preserveAspectRatio="none"><polyline points="${pts.join(' ')}" fill="none" stroke="${c}" stroke-width="10" stroke-linecap="round" stroke-dasharray="1 16" vector-effect="non-scaling-stroke"/></svg>
+      ${nodes}${open?'':`<div class="gate">${LOCK}<b>Stage ${s}</b><span>Finish Stage ${s-1} and its bonus Sudoku</span></div>`}</div>`;
+  }
+  const C=$('#mapC');C.innerHTML=h;screen='map';show('map');
+  C.querySelectorAll('.node').forEach(b=>b.onclick=()=>{
+    const shake=msg=>{b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');$('#mMsg').textContent=msg};
+    if(b.dataset.l){const L=+b.dataset.l;if(!lvOpen(g,L))return shake('Finish the levels before this one first.');startLevel(g,L)}
+    else{const s=+b.dataset.b;if(bonusOpen(g,s)||bonusDone(g,s))sdStart(g,s);else shake(stageComplete(g,s)?`Collect ${GATE-stStars(g,s)} more ★ in Stage ${s} to open this bonus.`:`Finish all 10 levels of Stage ${s} with ${GATE}★ to open this bonus.`)}});
+  $('#mMsg').textContent='';
+  const cur=C.querySelector('.node.cur');
+  if(cur){const cr=C.getBoundingClientRect(),nr=cur.getBoundingClientRect();C.scrollTop+=nr.top-cr.top-cr.height/2+31}else C.scrollTop=C.scrollHeight;
+}
+$('#mBack').onclick=()=>{hGame=mapGame;go('home')};
+
+/* ---------- Knots game screen ---------- */
+let KS=null,kDown=false,kFrom=null,kHover=null,kHintT=null;
+const kB=$('#kBoard');
+function kStart(g,ctx,resume){
+  KS={n:g.n,start:g.cells.slice(),cells:g.cells.slice(),sol:g.sol,hist:[],...ctx,t0:0,tEnd:0,done:false,hints:0,sel:null,hint:null,stuck:false,msg:'',tiles:g.cells.filter(Boolean).length};
+  closeSheet();
+  if(resume){KS.cells=resume.cells.slice();KS.hist=resume.hist||[];KS.hints=resume.hints||0;KS.t0=performance.now()-(resume.secs||0)*1000;if(resume.solved){KS.done=true;KS.tEnd=resume.solved}}
+  const bub=g.cells.filter(v=>v<0).map(v=>'×'+(-v)).join(' ');
+  if(ctx.kind==='daily'){$('#kTitle').textContent='Knots of the day';$('#kSub').textContent=`${niceDate(ctx.day)} · ${g.n} × ${g.n} · Hard`}
+  else{$('#kTitle').textContent=`Knots · Level ${ctx.L}`;$('#kSub').textContent=`Stage ${stageOf(ctx.L)} · ${g.n} × ${g.n}${bub?' · '+bub+' bubbles':''} · 3★ under ${fmt(knotsPar(KS.tiles))}`}
+  $('#kHintL').textContent=ctx.kind==='daily'?`Hint +${HINT_PENALTY}s`:'Hint';
+  kB.style.setProperty('--n',g.n);
+  screen='kgame';show('kgame');kCheck();kRender();kTick();
+}
+function kStartDaily(){
+  const k=dayKey(),g=kDaily(k),rec=store.get('tl-kdaily',{}),sv=store.get('tl-kdsave',{});
+  if(rec[k]!=null){const last=g.cells.slice();for(const [a,b] of g.sol){last[b]=kRes(last[a],last[b]);last[a]=0}kStart(g,{kind:'daily',day:k},{cells:last,secs:rec[k],solved:rec[k]});return}
+  kStart(g,{kind:'daily',day:k},sv.day===k?sv:null);
+}
+const kElapsed=()=>KS.done?KS.tEnd:KS.t0?(performance.now()-KS.t0)/1000+KS.hints*(KS.kind==='daily'?HINT_PENALTY:0):0;
+function kTick(){if(!KS)return;$('#kClock').textContent=fmt(kElapsed());
+  const live=KS.cells.filter(v=>v>0).length,bub=KS.cells.filter(v=>v<0).length;
+  $('#kProg').textContent=KS.done?'Complete!':KS.msg?KS.msg:KS.stuck?'No more moves. Undo or restart.':!KS.hist.length?'Drag a number onto a matching neighbour or a bubble':`${live} number${live>1?'s':''}${bub?` · ${bub} bubble${bub>1?'s':''}`:''} left`;
+  $('#kProg').classList.toggle('warn',(KS.stuck||!!KS.msg)&&!KS.done)}
+setInterval(()=>{if(KS&&KS.t0&&!KS.done&&screen==='kgame')kTick()},250);
+const kCan=(a,b)=>a!=null&&b!=null&&a!==b&&KS.cells[a]&&KS.cells[b]&&!!kRes(KS.cells[a],KS.cells[b])&&nbrs(KS.n,a).includes(b);
+function kRender(pop){
+  const {cells,sel,hint}=KS;
+  kB.innerHTML=cells.map((v,i)=>{
+    if(!v)return `<div class="kd"></div>`;
+    const cls=['kt'];if(i===sel)cls.push('sel');if(sel!=null&&kCan(sel,i))cls.push('tgt');if(hint&&(i===hint[0]||i===hint[1]))cls.push('hint');if(i===pop)cls.push('pop');
+    if(v<0)return `<button class="${cls.join(' ')} bub" data-i="${i}" aria-label="times ${-v} bubble">×${-v}</button>`;
+    const big=v>=1000?' k4':v>=100?' k3':'';
+    return `<button class="${cls.join(' ')}${big}" data-i="${i}" style="background:${KCOL[Math.round(Math.log2(v))%KCOL.length]}" aria-label="${v}">${v}</button>`}).join('');
+}
+function kCheck(){const live=KS.cells.filter(Boolean).length;KS.stuck=live>1&&!kMoves(KS.n,KS.cells).length}
+function kMerge(a,b){
+  KS.hist.push(KS.cells.slice());KS.cells[b]=kRes(KS.cells[a],KS.cells[b]);KS.cells[a]=0;KS.sel=null;KS.hint=null;KS.msg='';if(!KS.t0)KS.t0=performance.now();
+  kCheck();kRender(b);kTick();
+  const live=KS.cells.filter(Boolean);
+  if(live.length===1&&live[0]>0){KS.tEnd=Math.round(kElapsed());KS.done=true;kTick();setTimeout(kWin,450)}
+}
+kB.addEventListener('pointerdown',e=>{
+  if(!KS||KS.done)return;const el=e.target.closest('.kt');if(!el)return;const i=+el.dataset.i;
+  if(KS.sel!=null&&kCan(KS.sel,i)){kMerge(KS.sel,i);return}
+  KS.sel=KS.sel===i?null:i;kFrom=i;kHover=null;kDown=true;try{kB.setPointerCapture(e.pointerId)}catch(_){}kRender();
+});
+kB.addEventListener('pointermove',e=>{
+  if(!kDown||!KS)return;const el=document.elementFromPoint(e.clientX,e.clientY);const t=el&&el.closest?el.closest('.kt'):null;
+  const i=t?+t.dataset.i:null,h=kCan(kFrom,i)?i:null;
+  if(h!==kHover){kHover=h;kB.querySelectorAll('.over').forEach(x=>x.classList.remove('over'));if(h!=null)kB.querySelector(`[data-i="${h}"]`).classList.add('over')}
+});
+['pointerup','pointercancel'].forEach(t=>kB.addEventListener(t,()=>{if(kDown&&kHover!=null&&KS&&!KS.done)kMerge(kFrom,kHover);kDown=false;kHover=null}));
+kB.addEventListener('touchstart',e=>{if(e.target.closest&&e.target.closest('.kt'))e.preventDefault()},{passive:false});
+$('#kUndo').onclick=()=>{if(!KS||KS.done||!KS.hist.length)return;KS.cells=KS.hist.pop();KS.sel=null;KS.hint=null;KS.msg='';kCheck();kRender();kTick()};
+$('#kRestart').onclick=()=>{if(!KS||KS.done)return;KS.cells=KS.start.slice();KS.hist=[];KS.sel=null;KS.hint=null;KS.msg='';kCheck();kRender();kTick()};
+$('#kHint').onclick=()=>{
+  if(!KS||KS.done)return;
+  let mv=null;const s=kSolve(KS.n,KS.cells,200000);
+  if(s.moves)mv=s.moves[0];
+  else if(s.abort){/* too big to search from here: follow the built-in solution if the player is still on it */
+    const c=KS.start.slice();for(let i=0;i<KS.hist.length&&i<KS.sol.length;i++){const [a,b]=KS.sol[i];c[b]=kRes(c[a],c[b]);c[a]=0}
+    if(c.join()===KS.cells.join())mv=KS.sol[KS.hist.length];
+    else{KS.msg='Hard to tell from here. Try undoing a few moves.';kTick();return}}
+  if(!mv){KS.msg="This board can't be finished from here. Undo a few moves.";kTick();return}
+  KS.hints++;if(!KS.t0)KS.t0=performance.now();KS.hint=mv;KS.sel=null;KS.msg='';kRender();kTick();
+  clearTimeout(kHintT);kHintT=setTimeout(()=>{if(KS){KS.hint=null;kRender()}},2200);
+};
+function kSave(){if(KS&&KS.kind==='daily'&&!KS.done&&KS.t0)store.set('tl-kdsave',{day:KS.day,cells:KS.cells,hist:KS.hist,hints:KS.hints,secs:(performance.now()-KS.t0)/1000})}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)kSave()});
+$('#kBack').onclick=()=>{kSave();if(KS&&KS.kind==='level')openMap('knots');else{hGame='knots';go('home')}};
+async function kWin(){
+  const t=KS.tEnd,final=KS.cells.find(v=>v>0);
+  if(KS.kind==='level'){levelWin('knots',KS.L,t,KS.hints,knotsPar(KS.tiles));return}
+  const k=KS.day,rec=store.get('tl-kdaily',{});if(rec[k]==null){rec[k]=t;store.set('tl-kdaily',rec)}store.set('tl-kdsave',{});
+  openSheet(`<span class="muted">Knots of the day · tied into ${final}</span><div class="big">${fmt(t)}</div><p class="muted" id="sRank">${KS.hints?`Includes ${KS.hints*HINT_PENALTY}s of hint time. `:''}${backend&&me.name?'Posting your time…':''}</p>
+    <div class="row"><button class="b p" id="sLb">See leaderboard</button><button class="b" id="sShare">Copy result</button></div><button class="b" id="sHome">Home</button><p class="msg" id="sMsg"></p>`);
+  $('#sLb').onclick=()=>{closeSheet();lbGame='knots';go('lbScreen')};$('#sHome').onclick=()=>{closeSheet();hGame='knots';go('home')};
+  $('#sShare').onclick=()=>{const st=standing('knots');copy(`Threadline Knots · ${niceDate(k)}\nSolved in ${fmt(t)}${st&&st.n>1?` · #${st.rank} of ${st.n}`:''}${streak('knots')>1?` · ${streak('knots')}-day streak`:''}`,$('#sMsg'))};
+  if(backend&&!me.name){$('#sRank').innerHTML+=` Pick a username to join today's leaderboard.`;$('#sLb').textContent='Pick a username';$('#sLb').onclick=()=>{closeSheet();askName(()=>{lbGame='knots';go('lbScreen')})};return}
+  const r=await postScore(k,t,'knots');const note=$('#sRank');if(!note)return;
+  const pre=KS.hints?`Includes ${KS.hints*HINT_PENALTY}s of hint time. `:'';
+  if(r==='ok'){note.textContent=pre+'Checking your rank…';for(let i=0;i<20&&!standing('knots');i++)await new Promise(z=>setTimeout(z,250))}
+  const st=standing('knots');
+  note.textContent=pre+(r==='ok'&&st?(st.n>1?`You're #${st.rank} of ${st.n} today, faster than ${st.beat}% of players.`:'You\'re the first to solve today!')
+    :r==='ok'?'Posted to the leaderboard.':r==='denied'?'Saved on this device. This preview can\'t post your time.'
+    :r==='error'?'Saved on this device. The leaderboard couldn\'t be reached.':'Saved on this device.');
+}
+
+/* ---------- bonus 6×6 Sudoku: rows, columns and 2×3 boxes each hold 1–6 once ---------- */
+const sdBox=i=>Math.floor(Math.floor(i/6)/2)*2+Math.floor((i%6)/3);
+const SD_PEERS=[...Array(36)].map((_,i)=>{const s=new Set();for(let j=0;j<36;j++)if(j!==i&&(Math.floor(j/6)===Math.floor(i/6)||j%6===i%6||sdBox(j)===sdBox(i)))s.add(j);return [...s]});
+function sdCount(g,limit=2){g=g.slice();let count=0;
+  const go=()=>{let best=-1,bc=null;for(let i=0;i<36;i++)if(!g[i]){const c=[];for(let v=1;v<=6;v++)if(!SD_PEERS[i].some(p=>g[p]===v))c.push(v);if(!c.length)return;if(!bc||c.length<bc.length){best=i;bc=c}}
+    if(best<0){count++;return}for(const v of bc){g[best]=v;go();g[best]=0;if(count>=limit)return}};
+  go();return count}
+function sdFull(){const g=new Array(36).fill(0);const go=i=>{if(i===36)return true;const vs=[1,2,3,4,5,6].sort(()=>R()-.5);for(const v of vs){if(SD_PEERS[i].some(p=>g[p]===v))continue;g[i]=v;if(go(i+1))return true;g[i]=0}return false};go(0);return g}
+function genSudoku(givens,seed){if(seed!=null)R=seeded(seed);
+  const sol=sdFull(),g=sol.slice(),order=[...Array(36).keys()].sort(()=>R()-.5);let left=36;
+  for(const i of order){if(left<=givens)break;const v=g[i];g[i]=0;if(sdCount(g)!==1)g[i]=v;else left--}
+  R=Math.random;return {grid:g,sol}}
+let SD=null;
+function sdStart(g,s){
+  const p=genSudoku(Math.max(10,15-s),(g==='line'?7001:9001)+s*31);
+  SD={g,s,given:p.grid,cur:p.grid.slice(),sol:p.sol,sel:null,t0:0,tEnd:0,mistakes:0,hints:0,done:false,wrong:new Set()};
+  closeSheet();$('#sdTitle').textContent=`Bonus Sudoku · Stage ${s}`;$('#sdSub').textContent=`${g==='line'?'Line':'Knots'} journey · fill 1–6 in every row, column and box`;
+  screen='sdgame';show('sdgame');sdRender();sdTick();
+}
+const sdElapsed=()=>SD.done?SD.tEnd:SD.t0?(performance.now()-SD.t0)/1000:0;
+function sdTick(){if(!SD)return;$('#sdClock').textContent=fmt(sdElapsed());
+  const left=SD.cur.filter(v=>!v).length;$('#sdProg').textContent=SD.done?'Complete!':`${left} squares to fill${SD.mistakes?` · ${SD.mistakes} mistake${SD.mistakes>1?'s':''}`:''}`}
+setInterval(()=>{if(SD&&SD.t0&&!SD.done&&screen==='sdgame')sdTick()},250);
+function sdRender(){
+  const {cur,given,sel,wrong}=SD,sv=sel!=null?cur[sel]:0;
+  $('#sdBoard').innerHTML=cur.map((v,i)=>{const cls=['sq'];if(given[i])cls.push('gv');if(i===sel)cls.push('sel');
+    else if(sel!=null&&(Math.floor(i/6)===Math.floor(sel/6)||i%6===sel%6||sdBox(i)===sdBox(sel)))cls.push('peer');
+    if(sv&&v===sv&&i!==sel)cls.push('same');if(wrong.has(i))cls.push('bad');if(i%6===2)cls.push('rb');if(Math.floor(i/6)%2===1&&i<30)cls.push('bb');
+    return `<button class="${cls.join(' ')}" data-i="${i}" aria-label="Row ${Math.floor(i/6)+1} column ${i%6+1}${v?', '+v:''}">${v||''}</button>`}).join('');
+  $('#sdBoard').querySelectorAll('.sq').forEach(b=>b.onclick=()=>{if(SD.done)return;SD.sel=+b.dataset.i;sdRender()});
+}
+function sdPut(v){
+  if(!SD||SD.done||SD.sel==null||SD.given[SD.sel])return;if(!SD.t0)SD.t0=performance.now();
+  const i=SD.sel;SD.cur[i]=v;
+  if(v&&v!==SD.sol[i]){SD.wrong.add(i);SD.mistakes++}else SD.wrong.delete(i);
+  sdRender();sdTick();
+  if(SD.cur.every((x,j)=>x===SD.sol[j])){SD.tEnd=Math.round(sdElapsed());SD.done=true;sdTick();setTimeout(sdWin,400)}
+}
+$('#sdPad').innerHTML=[1,2,3,4,5,6].map(v=>`<button class="pk" data-v="${v}">${v}</button>`).join('')+`<button class="pk er" data-v="0" aria-label="Erase">⌫</button>`;
+$('#sdPad').querySelectorAll('.pk').forEach(b=>b.onclick=()=>sdPut(+b.dataset.v));
+$('#sdHint').onclick=()=>{if(!SD||SD.done)return;let i=SD.sel;if(i==null||SD.given[i]||SD.cur[i]===SD.sol[i])i=SD.cur.findIndex((v,j)=>v!==SD.sol[j]);if(i<0)return;
+  SD.hints++;SD.sel=i;sdPut(SD.sol[i])};
+$('#sdBack').onclick=()=>openMap(SD?SD.g:'line');
+function sdWin(){
+  const {g,s}=SD,t=SD.tEnd,pen=SD.mistakes+SD.hints,stars=pen===0&&t<=SD_PAR?3:pen<=2?2:1;
+  J[g].bonus[s]=Math.max(J[g].bonus[s]||0,stars);jSave();
+  const nx=nextStep(g);
+  openSheet(`<div class="bigstars">${starRow(stars)}</div><h2>Bonus complete!</h2>
+    <p class="muted">Time ${fmt(t)}${SD.mistakes?` · ${SD.mistakes} mistake${SD.mistakes>1?'s':''}`:''}${SD.hints?` · ${SD.hints} hint${SD.hints>1?'s':''}`:''}.${s<STAGES?`<br><b style="color:var(--accent)">Stage ${s+1} · ${STAGE_INFO[s][0]} is open!</b>`:'<br><b style="color:var(--accent)">You finished the whole journey!</b>'}</p>
+    <div class="row"><button class="b" id="sMap">Levels</button><button class="b p" id="sNext"${nx.type==='level'?'':' disabled'}>${nx.type==='level'?'Level '+nx.L:'Next'}</button></div>`);
+  $('#sMap').onclick=()=>{closeSheet();openMap(g)};$('#sNext').onclick=()=>startStep(g,nx);
+}
+
+/* ---------- create ---------- */
+let ed={n:5,path:[],cps:new Set(),walls:new Set(),step:0,target:0};
+const edPos=()=>{const N=ed.n*ed.n,idx=[0,...[...ed.cps].sort((a,b)=>a-b),N-1];return idx.map(i=>ed.path[i])};
+function edPuzzle(){return mkPuzzle(ed.n,edPos(),[...ed.walls],{name:$('#fName').value.trim(),title:$('#fTitle').value.trim(),target:ed.target})}
+function edChanged(){const L=ed.path.length;ed.cps=new Set([...ed.cps].filter(i=>i>0&&i<L-1));const pe=pathEdges(ed.path);for(const w of [...ed.walls])if(pe.has(w))ed.walls.delete(w);ed.target=0;$('#out').classList.add('hide')}
+function edStep(c){
+  const p=ed.path;
+  if(!p.length){p.push(c);return true}
+  const i=p.indexOf(c);if(i>=0){if(i<p.length-1){p.length=i+1;return true}return false}
+  if(!adjC(ed.n,p[p.length-1],c))return false;p.push(c);return true;
+}
+function drawEd(){
+  const n=ed.n,N=n*n,nums=new Array(N).fill(0);
+  if(ed.step>0&&ed.path.length===N)edPos().forEach((c,i)=>nums[c]=i+1);
+  eB.innerHTML=svgFor({n,nums,walls:ed.walls,line:ed.path,faintLine:ed.step===2,tint:ed.step===0?ed.path:[],hits:new Set(),head:ed.step===0?ed.path[ed.path.length-1]:null,edgeDots:ed.step===2});
+}
+const HELP=[
+  n=>`Drag one line that visits every square exactly once. This is your secret solution. ${ed.path.length}/${n*n} squares covered.`,
+  ()=>`Tap squares on your line to add or remove numbered checkpoints. Start and end are always numbered. Fewer numbers make it harder. ${ed.cps.size+2} numbers now.`,
+  ()=>`Optional: tap between two squares to add or remove a wall. Walls can't cross your line. ${ed.walls.size} walls.`,
+  ()=>`Name it, play-test it to set a time to beat, then create the code.`
+];
+const help=()=>$('#edHelp').textContent=HELP[ed.step](ed.n);
+function goStep(s){ed.step=s;$('#edMsg').textContent='';
+  document.querySelectorAll('.steps button').forEach(b=>{const k=+b.dataset.s;b.classList.toggle('on',k===s);b.disabled=k>0&&ed.path.length!==ed.n*ed.n});
+  $('#edShare').classList.toggle('hide',s!==3);$('#eBox').classList.toggle('hide',s===3);$('#next').classList.toggle('hide',s===3);$('#back').disabled=s===0;
+  const T=$('#edTools');
+  if(s===0)T.innerHTML=`<select id="eSize" aria-label="Board size">${[4,5,6,7,8].map(k=>`<option value="${k}"${k===ed.n?' selected':''}>${k} × ${k}</option>`).join('')}</select><button class="b" id="eRand">Random line</button><button class="b" id="eClear">Clear</button>`;
+  else if(s===1)T.innerHTML=`<button class="b" id="eAuto">Pick for me</button><button class="b" id="eNone">Only start and end</button>`;
+  else if(s===2)T.innerHTML=`<button class="b" id="eWr">Add random walls</button><button class="b" id="eWc">Remove all</button>`;
+  else T.innerHTML='';
+  const on=(id,f)=>{const e=$(id);if(e)e.onclick=()=>{f();goStep(ed.step)}};
+  on('#eRand',()=>{ed.path=randomPath(ed.n);edChanged()});
+  on('#eClear',()=>{ed.path=[];edChanged()});
+  on('#eAuto',()=>{ed.cps=new Set(pickCps(ed.n*ed.n,ed.n+1));ed.target=0});
+  on('#eNone',()=>{ed.cps=new Set();ed.target=0});
+  on('#eWr',()=>{randomWalls(ed.n,ed.path,Math.max(2,ed.n-2)).forEach(w=>ed.walls.add(w));ed.target=0});
+  on('#eWc',()=>{ed.walls.clear();ed.target=0});
+  const sz=$('#eSize');if(sz)sz.onchange=()=>{ed.n=+sz.value;ed.path=[];ed.cps=new Set();ed.walls=new Set();edChanged();goStep(0)};
+  if(s===3){$('#tgt').textContent=ed.target?`Time to beat: ${fmt(ed.target)}`:'No time to beat yet';$('#chk').textContent=''}
+  help();drawEd();
+}
+$('#next').onclick=()=>{if(ed.step===0&&ed.path.length!==ed.n*ed.n){$('#edMsg').textContent=`Your line has to cover all ${ed.n*ed.n} squares first.`;return}
+  if(ed.step===0&&!ed.cps.size)ed.cps=new Set(pickCps(ed.n*ed.n,ed.n+1));goStep(ed.step+1)};
+$('#back').onclick=()=>goStep(Math.max(0,ed.step-1));
+document.querySelectorAll('.steps button').forEach(b=>b.onclick=()=>{if(!b.disabled)goStep(+b.dataset.s)});
+$('#test').onclick=()=>loadGame(edPuzzle(),{kind:'test'});
+$('#check').onclick=()=>{$('#chk').textContent='Checking…';setTimeout(()=>{const r=countRoutes(edPuzzle());
+  $('#chk').textContent=r.sols>=2?'More than one route works. Fine, but adding a number or wall makes it sharper.':r.abort?'Too big to check fully, but your own line always works.':'Only one route works. Nice and tight.'},30)};
+$('#make').onclick=()=>{const p=edPuzzle(),code=enc(p);$('#code').value=code;$('#out').classList.remove('hide');
+  try{lastSetHash=code;location.hash=code}catch(e){}
+  $('#cpMsg').onclick=()=>copy(`${p.name||'I'} made you a Threadline puzzle${p.title?': “'+p.title+'”':''} (${p.n}×${p.n}). ${p.target?'Beat my time of '+fmt(p.target)+'!':'Can you solve it?'}\n${/^https?:/.test(location.protocol)?'Tap to play: '+location.href.split('#')[0]+'#'+code+'\n':''}Or open Threadline, tap Join a challenge and paste this code:\n${code}`,$('#edMsg'));
+  $('#cpCode').onclick=()=>copy(code,$('#edMsg'))};
+function copy(text,msgEl){
+  const fall=()=>{const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();let ok=false;try{ok=document.execCommand('copy')}catch(e){}t.remove();msgEl.textContent=ok?'Copied.':'Copy blocked here: select the code and copy it by hand.'};
+  try{navigator.clipboard.writeText(text).then(()=>msgEl.textContent='Copied.',fall)}catch(e){fall()}
+}
+
+/* ---------- pointer ---------- */
+function cellAt(e,el,n){const r=el.getBoundingClientRect(),cs=getComputedStyle(el),pl=parseFloat(cs.paddingLeft)||0,pt=parseFloat(cs.paddingTop)||0;
+  const w=r.width-2*pl,h=r.height-2*pt,pad=.08,u=n+2*pad;
+  const x=(e.clientX-r.left-pl)/w*u-pad,y=(e.clientY-r.top-pt)/h*u-pad;
+  if(x<0||y<0||x>=n||y>=n)return null;return {c:Math.floor(y)*n+Math.floor(x),x,y,n}}
+function wallTap(h){const {x,y,n}=h,fx=x%1,fy=y%1,r=Math.floor(y),c=Math.floor(x);
+  const dx=Math.min(fx,1-fx),dy=Math.min(fy,1-fy);let a,b;
+  if(dx<dy){const cc=fx<.5?c-1:c;if(cc<0||cc>=n-1)return;a=r*n+cc;b=a+1}else{const rr=fy<.5?r-1:r;if(rr<0||rr>=n-1)return;a=rr*n+c;b=a+n}
+  const k=ek(a,b);if(pathEdges(ed.path).has(k)){$('#edMsg').textContent='A wall there would cut your line.';return}
+  $('#edMsg').textContent='';ed.walls.has(k)?ed.walls.delete(k):ed.walls.add(k);ed.target=0;help();drawEd()}
+function bind(el,isGame){
+  let down=false;
+  const act=(e,first)=>{
+    if(isGame){if(!P)return;const h=cellAt(e,el,P.n);if(h&&stepToward(h.c,step,path,P.n)){if(hintCell!=null&&path.includes(hintCell))hintCell=null;drawGame();tick();checkWin()}return}
+    const h=cellAt(e,el,ed.n);if(!h)return;
+    if(ed.step===0){if(stepToward(h.c,edStep,ed.path,ed.n)){edChanged();help();drawEd()}}
+    else if(ed.step===1&&first){const i=ed.path.indexOf(h.c);if(i>0&&i<ed.path.length-1){ed.cps.has(i)?ed.cps.delete(i):ed.cps.add(i);ed.target=0;help();drawEd()}}
+    else if(ed.step===2&&first)wallTap(h);
+  };
+  el.addEventListener('touchstart',e=>{if(e.touches.length===1)e.preventDefault()},{passive:false});
+  el.addEventListener('touchmove',e=>{if(down)e.preventDefault()},{passive:false});
+  el.addEventListener('pointerdown',e=>{down=true;try{el.setPointerCapture(e.pointerId)}catch(_){}act(e,true)});
+  el.addEventListener('pointermove',e=>{if(down)act(e,false)});
+  ['pointerup','pointercancel'].forEach(t=>el.addEventListener(t,()=>down=false));
+}
+bind(gB,true);bind(eB,false);
+
+
+/* ---------- join / links ---------- */
+$('#jGo').onclick=()=>{try{const p=dec($('#jCode').value);$('#jMsg').textContent='';loadGame(p,{kind:'challenge'})}catch(e){$('#jMsg').textContent="That code doesn't look right. Check it was copied in full."}};
+function fromHash(){const h=location.hash.slice(1);if(!h||h===lastSetHash)return false;try{loadGame(dec(h),{kind:'challenge'});return true}catch(e){return false}}
+addEventListener('hashchange',fromHash);
+if(!fromHash())go('home');
+initBackend();
+if('serviceWorker' in navigator&&/^https?:/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
