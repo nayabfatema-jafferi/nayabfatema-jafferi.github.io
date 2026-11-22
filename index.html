@@ -239,7 +239,7 @@ svg .hint{fill:none;stroke:var(--gold);stroke-width:.1;animation:pulse .6s ease-
       </div>
 
       <div class="links">
-        <button class="lk" id="hCreate">Create a puzzle<small>Design one, dare your friends</small></button>
+        <button class="lk" id="hCreate">Create a Line puzzle<small>Design one, dare your friends</small></button>
         <button class="lk" id="hJoin">Join a challenge<small>Paste a friend's code</small></button>
       </div>
       <p class="muted" style="text-align:center;font-size:13px"><a href="privacy.html" style="color:var(--soft)">Privacy policy</a></p>
@@ -462,12 +462,12 @@ function dec(str){
    Leave it as null to run without the online leaderboard. */
 const FIREBASE_CONFIG = null;   /* <- STEP: replace null with your config, for example:
 const FIREBASE_CONFIG = {
-  apiKey: "AIza...",
-  authDomain: "threadline-xxxx.firebaseapp.com",
-  projectId: "threadline-xxxx",
-  storageBucket: "threadline-xxxx.firebasestorage.app",
-  messagingSenderId: "1234567890",
-  appId: "1:1234567890:web:abc123"
+  apiKey: "AIzaSyCEV6UwD4mXisc--TOBv5zANrG2VpnFo3c",
+  authDomain: "threadline-b8367.firebaseapp.com",
+  projectId: "threadline-b8367",
+  storageBucket: "threadline-b8367.firebasestorage.app",
+  messagingSenderId: "643744036680",
+  appId: "1:643744036680:web:2e52507559ef542ff5e57d"
 };  */
 const FB_VER = '10.12.2';
 
@@ -613,6 +613,7 @@ function renderHome(){
   const g=hGame,G=GAMES[g],k=dayKey(),mine=store.get(G.rec,{})[k],st=standing(g),L=lbs[g];
   if(backend&&L.day!==k)subscribeDay(g);
   document.querySelectorAll('#gameSeg button').forEach(b=>b.classList.toggle('on',b.dataset.g===g));
+  document.querySelector('.links').classList.toggle('hide',g!=='line');
   $('#meChip').textContent=me.name?'@'+me.name:backend?'Pick a username':'';
   $('#meChip').classList.toggle('hide',!me.name&&!backend);
   $('#dKick').textContent=g==='line'?'Line · puzzle of the day':'Knots · puzzle of the day';
