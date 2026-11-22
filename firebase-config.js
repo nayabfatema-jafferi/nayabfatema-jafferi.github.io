@@ -11,4 +11,11 @@
 //   appId: "1:1234567890:web:abc123"
 // };
 
-window.THREADLINE_FIREBASE = null;
+window.THREADLINE_FIREBASE = {
+  apiKey: "AIzaSyCEV6UwD4mXisc--TOBv5zANrG2VpnFo3c",
+  authDomain: "threadline-b8367.firebaseapp.com",
+  projectId: "threadline-b8367",
+  storageBucket: "threadline-b8367.firebasestorage.app",
+  messagingSenderId: "643744036680",
+  appId: "1:643744036680:web:2e52507559ef542ff5e57d"
+};
